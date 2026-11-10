@@ -30,7 +30,7 @@ function FieldSolver.createGridParts(grid: GridBase, base: BasePart, cellSize: V
     local baseCFrame = base.CFrame
     local topLeft = baseCFrame * CFrame.new(
         -baseSize.X * 0.5 + cellSize.X * 0.5,
-        DEFAULT_CELL_PART_SIZE_Y,
+        baseSize.Y * 0.5 + DEFAULT_CELL_PART_SIZE_Y * 0.5,
         -baseSize.Z * 0.5 + cellSize.Y * 0.5
     )
 
@@ -45,7 +45,8 @@ function FieldSolver.createGridParts(grid: GridBase, base: BasePart, cellSize: V
             local index = grid:index(x, y)
 
             local cell = Instance.new("Part")
-            cell.Anchored, cell.CanCollide, cell.CanTouch = true, false, true
+            cell.Anchored, cell.CanCollide = true, false
+            cell.CanTouch, cell.CanQuery = false, false
 			cell.TopSurface = Enum.SurfaceType.Smooth
             cell.Transparency = 0.9
             cell.Size = cellPartSize
@@ -74,8 +75,8 @@ end
 function FieldSolver.setCostRect(grid: GridBase, pos: Vector2, size: Vector2, c: number)
     local dirtyCells = {}
     
-    for y = pos.Y, pos.Y + size.Y do
-        for x = pos.X, pos.X + size.Y do
+    for y = pos.Y, pos.Y + size.Y - 1 do
+        for x = pos.X, pos.X + size.Y - 1 do
             local index = grid:index(x, y)
 
             table.insert(dirtyCells, index)

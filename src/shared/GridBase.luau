@@ -41,10 +41,17 @@ function GridBase.isValid(self: GridBase, x: number, y: number): boolean
 	return x > 0 and x <= self.width and y > 0 and y <= self.height
 end
 
--- Returns an index for 0-based arrays from (x, y) coordinates for a 1-based array
+-- Returns a 0-based index from 2D coordinates for a 1-based index
 -- We'll be using the convention that (1, 1) refers to the first element in the grid
+-- Thus, (1, 1) returns 0
 function GridBase.index(self: GridBase, x: number, y: number): number
 	return (y - 1) * self.width + x - 1
+end
+
+-- Converts a 0-based index back to 2D coordinates for a 1-based index
+-- index 0 points back to (1, 1)
+function GridBase.coordinates(self: GridBase, i: number): Vector2
+	return Vector2.new(i % self.width, i // self.width) + Vector2.one
 end
 
 function GridBase.getWeight(self: GridBase, i: number): number
