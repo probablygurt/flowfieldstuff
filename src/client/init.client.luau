@@ -1,1 +1,3 @@
-print("Hello world, from client!")
+local InputHandler = require(script.InputHandler)
+
+print(InputHandler, "init")

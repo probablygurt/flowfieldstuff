@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local RemotesHandler = require(script.RemotesHandler)
 local FieldSolver = require(ReplicatedStorage.Shared.FieldSolver)
 
 local cellSize = Vector2.new(4, 4)
