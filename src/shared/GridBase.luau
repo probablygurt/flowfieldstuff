@@ -1,4 +1,5 @@
 --!strict
+
 local DEF_WEIGHT_INIT = 1
 local DEF_COST_INIT = math.huge
 
