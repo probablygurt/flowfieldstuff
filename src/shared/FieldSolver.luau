@@ -1,23 +1,21 @@
---!strict
 local GridBase = require(script.Parent.GridBase)
+local GridHeap = require(script.Parent.GridHeap)
 
 local DEFAULT_CELL_PART_SIZE_Y = 1
-local DIR = {
-    -Vector2.xAxis,
-    Vector2.xAxis,
-    -Vector2.yAxis,
-    Vector2.yAxis,
-    
-    -Vector2.one,
-    Vector2.one,
-    Vector2.new(-1, 1),
-    Vector2.new(1, -1)
-}
 
-local DIR_COST = {
-    10, 10, 10, 10,
-    14, 14, 14, 14
-}
+local DIR_X = {-1, 1, 0, 0, -1, 1, -1, 1}
+local DIR_Y = {0, 0, -1, 1, -1, 1, 1, -1}
+local OPP = {2, 1, 4, 3, 6, 5, 8, 7}
+
+--[[
+(-1, 0) = (1, 0)
+(1, 0) = (-1, 0)
+
+(0, -1) = (0, 1)
+(0, 1) = (0, -1)
+--]]
+
+local DIR_COST = {10, 10, 10, 10}
 
 local FieldSolver = {}
 
@@ -52,10 +50,14 @@ function FieldSolver.createGridParts(grid: GridBase, base: BasePart, cellSize: V
 
     local cellPartSize = Vector3.new(cellSize.X, DEFAULT_CELL_PART_SIZE_Y, cellSize.Y)
 
-    local folder = Instance.new("Folder")
-    folder.Name = "GridParts"
-    folder.Parent = base
+    local folder = base:FindFirstChild("GridParts") :: Folder?
 
+    if folder == nil then
+        folder = Instance.new("Folder")
+        folder.Name = "GridParts"
+        folder.Parent = base
+    end
+    
     for y = 1, grid.height do
         for x = 1, grid.width do
             local index = grid:index(x, y)
@@ -123,8 +125,9 @@ end
 
 type StepWeight = (grid: GridBase, x: number, y: number, d: number) -> (number?, number?)
 
+@native
 function FieldSolver.stepWeight(grid: GridBase, x: number, y: number, d: number): (number?, number?)
-    local nx, ny = x + DIR[d].X, y + DIR[d].Y
+    local nx, ny = x + DIR_X[d], y + DIR_Y[d]
     if not grid:isValid(nx, ny) then return end
 
     local ni = grid:index(nx, ny)
@@ -140,14 +143,31 @@ function FieldSolver.stepWeight(grid: GridBase, x: number, y: number, d: number)
     return ni, weight * DIR_COST[d]
 end
 
--- Assumes goal costs have already been initialized
+function FieldSolver.initObjects(grid: GridBase)
+    grid:initializeBuffers()
+
+    for index, objectData in grid.objects do
+        if objectData.Weight ~= nil then
+            grid:setWeight(index, objectData.Weight)
+        end
+
+        if objectData.Cost ~= nil then
+            grid:setCost(index, objectData.Cost)
+        end
+    end
+end
+
+-- Assumes objects have already been initialized
+@native
 function FieldSolver.computeCosts(grid: GridBase, stepWeight: StepWeight?)
     local defStepWeight: StepWeight = stepWeight or FieldSolver.stepWeight
 
     local changed = true
+    local passes = 0
 
     while changed do
         changed = false
+        passes += 1
 
         for y = 1, grid.height do
             for x = 1, grid.width do
@@ -158,9 +178,9 @@ function FieldSolver.computeCosts(grid: GridBase, stepWeight: StepWeight?)
                 local cost = grid:getCost(index)
                 local best = cost
 
-                for d = 1, #DIR do
+                for d = 1, #DIR_COST do
                     local ni, weight = defStepWeight(grid, x, y, d)
-                    if ni == nil or weight == nil then continue end
+                    if ni == nil then continue end
 
                     best = math.min(best, grid:getCost(ni) + weight)
                 end
@@ -172,6 +192,73 @@ function FieldSolver.computeCosts(grid: GridBase, stepWeight: StepWeight?)
             end
         end
     end
+
+    print(`passes: {passes}`)
+end
+
+@native
+function FieldSolver.computeCostsQueue(grid: GridBase, stepWeight: StepWeight?)
+    local defStepWeight: StepWeight = stepWeight or FieldSolver.stepWeight
+    
+    local n = grid.width * grid.height
+    local walkable = table.create(n, false)
+    local costs = table.create(n, 0)
+    local improved = table.create(n, false)
+
+    local gridHeap = GridHeap.new()
+
+    local p = 0
+    for y = 1, grid.height do
+        for x = 1, grid.width do
+            p += 1
+
+            local weight = grid:getWeight(p - 1)
+            if weight < 0 then return end 
+            if weight == math.huge then continue end 
+
+            walkable[p] = true 
+            
+            local cost = grid:getCost(p - 1)
+            costs[p] = cost
+            if cost == math.huge then continue end 
+
+            gridHeap:push(p, cost)
+        end
+    end
+
+    while gridHeap.size > 0 do
+        local cell, curr = gridHeap:pop()
+
+        if curr ~= costs[cell] then continue end 
+
+        local y = (cell - 1) // grid.width + 1
+        local x = cell - (y - 1) * grid.width
+
+        for d = 1, #DIR_COST do
+            local ix, iy = x + DIR_X[d], y + DIR_Y[d]
+            if not grid:isValid(ix, iy) then continue end
+
+            local ipos = (iy - 1) * grid.width + ix
+            if not walkable[ipos] then continue end
+
+            local ni, weight = defStepWeight(grid, ix, iy, OPP[d])
+        
+            if ni == nil then continue end 
+
+            local candidate = curr + weight
+            if candidate < costs[ipos] then
+                costs[ipos] = candidate
+                improved[ipos] = true
+                gridHeap:push(ipos, candidate)
+            end
+        end
+    end
+
+    for i = 1, n do
+        if improved[i] then
+            grid:setCost(i - 1, costs[i])
+        end
+    end 
 end
 
 function FieldSolver.getMaxCost(grid: GridBase): number
@@ -183,6 +270,22 @@ function FieldSolver.getMaxCost(grid: GridBase): number
 	end
 
 	return max
+end
+
+function FieldSolver.createGradient(grid: GridBase, maxCost: number, map: Model, c1: Color3, c2: Color3)
+    local n = grid.width * grid.height
+    local base = map.PrimaryPart
+
+    for i = 0, n - 1 do
+        local cost = grid:getCost(i)
+        local part = base.GridParts:FindFirstChild(`Cell{i}`) :: BasePart
+        
+        if part == nil then continue end
+        
+        local alpha = (cost / maxCost)
+        part.Transparency = 0
+        part.Color = c1:Lerp(c2, alpha)
+    end
 end
 
 return FieldSolver
