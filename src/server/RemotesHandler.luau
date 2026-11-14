@@ -8,6 +8,7 @@ local remotes = ReplicatedStorage.Remotes :: Folder
 local requestPlaceableObjects = remotes.RequestPlaceableObjects :: RemoteFunction
 local requestGridSize = remotes.RequestGridSize :: RemoteFunction
 local placeObject = remotes.PlaceObject :: RemoteEvent
+local tracePath = remotes.TracePath :: RemoteEvent
 
 local RemotesHandler = {
     Grid = nil
@@ -48,7 +49,16 @@ function RemotesHandler.onPlaceObject(player: Player, gridCoords: Vector2, toPla
     FieldSolver.createGradient(grid, FieldSolver.getMaxCost(grid), workspace.Map, Color3.fromRGB(0, 255, 0), Color3.fromRGB(255, 0, 255))
 end
 
+function RemotesHandler.onTracePath(player: Player, gridCoords: Vector2)
+    local grid = RemotesHandler.Grid :: GridBase.GridBase
+
+    local path = FieldSolver.tracePath(grid, gridCoords)
+
+    if not grid:isValid(gridCoords.X, gridCoords.Y) then return end 
+end
+
 requestPlaceableObjects.OnServerInvoke = RemotesHandler.onRequestPlaceableObjects
 requestGridSize.OnServerInvoke = RemotesHandler.onRequestGridSize
 placeObject.OnServerEvent:Connect(RemotesHandler.onPlaceObject)
+tracePath.OnServerEvent:Connect(RemotesHandler.onTracePath)
 return RemotesHandler

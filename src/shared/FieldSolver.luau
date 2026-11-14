@@ -5,20 +5,12 @@ local DEFAULT_CELL_PART_SIZE_Y = 1
 
 local DIR_X = {-1, 1, 0, 0, -1, 1, -1, 1}
 local DIR_Y = {0, 0, -1, 1, -1, 1, 1, -1}
-local OPP = {2, 1, 4, 3, 6, 5, 8, 7}
-
---[[
-(-1, 0) = (1, 0)
-(1, 0) = (-1, 0)
-
-(0, -1) = (0, 1)
-(0, 1) = (0, -1)
---]]
-
-local DIR_COST = {10, 10, 10, 10}
+local OPP = {2, 1, 4, 3, 6, 5, 8, 7} 
+local DIR_COST = {10, 10, 10, 10, 14, 14, 14, 14}
 
 local FieldSolver = {}
 
+type StepWeight = (grid: GridBase, x: number, y: number, d: number) -> (number?, number?)
 export type GridBase = GridBase.GridBase
 
 local function isDecimal(x: number): boolean
@@ -105,6 +97,17 @@ function FieldSolver.setCostRect(grid: GridBase, pos: Vector2, size: Vector2, c:
     return dirtyCells
 end
 
+function FieldSolver.getMaxCost(grid: GridBase): number
+    local max = -math.huge
+	
+    for i = 0, grid.width * grid.height - 1 do
+		local c = grid:getCost(i)
+		if c ~= math.huge and c > max then max = c end
+	end
+
+	return max
+end
+
 function FieldSolver.forEachCell(grid: GridBase, cells: {number}?, callback: (i: number) -> ())
     local all = cells == nil
 
@@ -123,7 +126,23 @@ function FieldSolver.forEachCell(grid: GridBase, cells: {number}?, callback: (i:
     end
 end
 
-type StepWeight = (grid: GridBase, x: number, y: number, d: number) -> (number?, number?)
+function FieldSolver.createGradient(grid: GridBase, maxCost: number, map: Model, c1: Color3, c2: Color3)
+    local n = grid.width * grid.height
+    local base = map.PrimaryPart
+    local gridParts = base:FindFirstChild("GridParts") :: Folder?
+
+    if gridParts == nil then return end 
+
+    for i = 0, n - 1 do
+        local cost = grid:getCost(i)
+        local part = gridParts:FindFirstChild(`Cell{i}`) :: BasePart
+        if part == nil then continue end
+        
+        local alpha = (cost / maxCost)
+        part.Transparency = 0
+        part.Color = c1:Lerp(c2, alpha)
+    end
+end
 
 @native
 function FieldSolver.stepWeight(grid: GridBase, x: number, y: number, d: number): (number?, number?)
@@ -261,31 +280,60 @@ function FieldSolver.computeCostsQueue(grid: GridBase, stepWeight: StepWeight?)
     end 
 end
 
-function FieldSolver.getMaxCost(grid: GridBase): number
-    local max = -math.huge
-	
-    for i = 0, grid.width * grid.height - 1 do
-		local c = grid:getCost(i)
-		if c ~= math.huge and c > max then max = c end
-	end
+function FieldSolver.tracePath(grid: GridBase, origin: Vector2, stepWeight: StepWeight?): {number}
+    local defStepWeight = stepWeight or FieldSolver.stepWeight
 
-	return max
-end
+    local path = {grid:index(origin.X, origin.Y)}
 
-function FieldSolver.createGradient(grid: GridBase, maxCost: number, map: Model, c1: Color3, c2: Color3)
     local n = grid.width * grid.height
-    local base = map.PrimaryPart
+    local currX, currY, currIndex = origin.X, origin.Y, grid:index(origin.X, origin.Y)
+    
+    for i = 1, n do
+        -- Get neighbours with lowest cost
+        -- Get neighbour with lowest cost...
+        -- If neighbour with lowest cost is less than current cost, then add to path then proceed
+        -- If not, return path
 
-    for i = 0, n - 1 do
-        local cost = grid:getCost(i)
-        local part = base.GridParts:FindFirstChild(`Cell{i}`) :: BasePart
+        local cost = grid:getCost(currIndex)
+        local lowest = cost
+        local lowestI = -1
+
+        for d = 1, #DIR_COST do
+            local ni, _ = defStepWeight(grid, currX, currY, d)
+            if ni == nil then continue end 
+
+            local c = grid:getCost(ni)
+            if c < lowest then
+                lowest = c
+                lowestI = ni
+            end
+        end
+
+        if lowest >= cost then break end
+
+        table.insert(path, lowestI)
         
-        if part == nil then continue end
-        
-        local alpha = (cost / maxCost)
-        part.Transparency = 0
-        part.Color = c1:Lerp(c2, alpha)
+        currX = lowestI % grid.width + 1
+        currY = lowestI // grid.width + 1
     end
+
+    local base = workspace.Map.PrimaryPart
+    local gridParts = base:FindFirstChild("GridParts") :: Folder?
+
+    if gridParts ~= nil then
+        for _, i in path do
+            local part = gridParts:FindFirstChild(`Cell{i}`) :: BasePart
+            if part == nil then continue end 
+
+            local prevColor = part.Color
+            part.Color = Color3.fromRGB(255, 255, 0)
+            task.delay(5, function()
+                part.Color = prevColor
+            end)
+        end
+    end
+
+    return path
 end
 
 return FieldSolver

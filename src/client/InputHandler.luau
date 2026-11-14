@@ -7,6 +7,7 @@ local UIHandler = require(script.Parent.UIHandler)
 local remotes = ReplicatedStorage.Remotes :: Folder
 local requestPlaceableObjects = remotes.RequestPlaceableObjects :: RemoteFunction
 local placeObject = remotes.PlaceObject :: RemoteEvent
+local tracePath = remotes.TracePath :: RemoteEvent
 
 local InputHandler = {}
 
@@ -57,10 +58,17 @@ function InputHandler.placeSelectedObject(_, state: Enum.UserInputState)
     placeObject:FireServer(PlacementController.GridCoords, placeableObjects[selectedToPlaceIndex])
 end
 
+function InputHandler.tracePath(_, state: Enum.UserInputState)
+    if placementToggled == false or state ~= Enum.UserInputState.Begin then return end 
+
+    tracePath:FireServer(PlacementController.GridCoords)
+end
+
 CAS:BindAction("TogglePlacement", InputHandler.togglePlacement, false, Enum.KeyCode.F)
 CAS:BindAction("CycleSelectedToPlaceL", InputHandler.cycleSelectedToPlace, false, Enum.KeyCode.Q)
 CAS:BindAction("CycleSelectedToPlaceR", InputHandler.cycleSelectedToPlace, false, Enum.KeyCode.E)
 CAS:BindAction("PlaceSelectedObject", InputHandler.placeSelectedObject, false, Enum.UserInputType.MouseButton1)
+CAS:BindAction("TracePath", InputHandler.tracePath, false, Enum.KeyCode.T)
 UIHandler.updateSelectedToPlace("Placement Inactive")
 
 return InputHandler
