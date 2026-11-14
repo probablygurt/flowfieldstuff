@@ -1,9 +1,12 @@
 local CAS = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local PlacementController = require(script.Parent.PlacementController)
 local UIHandler = require(script.Parent.UIHandler)
 
 local remotes = ReplicatedStorage.Remotes :: Folder
 local requestPlaceableObjects = remotes.RequestPlaceableObjects :: RemoteFunction
+local placeObject = remotes.PlaceObject :: RemoteEvent
 
 local InputHandler = {}
 
@@ -28,9 +31,11 @@ function InputHandler.togglePlacement(_, state: Enum.UserInputState)
     placementToggled = not placementToggled
     
     if placementToggled then
+        PlacementController.Start()
         UIHandler.updateSelectedToPlace(placeableObjects[selectedToPlaceIndex], selectedToPlaceIndex)
     else 
-        UIHandler.updateSelectedToPlace("Placement Not Active")
+        PlacementController.Stop()
+        UIHandler.updateSelectedToPlace("Placement Inactive")
     end
 end
 
@@ -46,9 +51,16 @@ function InputHandler.cycleSelectedToPlace(actionName: string, state: Enum.UserI
     UIHandler.updateSelectedToPlace(placeableObjects[selectedToPlaceIndex], selectedToPlaceIndex)
 end
 
+function InputHandler.placeSelectedObject(_, state: Enum.UserInputState)
+    if placementToggled == false or state ~= Enum.UserInputState.Begin then return end 
+
+    placeObject:FireServer(PlacementController.GridCoords, placeableObjects[selectedToPlaceIndex])
+end
+
 CAS:BindAction("TogglePlacement", InputHandler.togglePlacement, false, Enum.KeyCode.F)
 CAS:BindAction("CycleSelectedToPlaceL", InputHandler.cycleSelectedToPlace, false, Enum.KeyCode.Q)
 CAS:BindAction("CycleSelectedToPlaceR", InputHandler.cycleSelectedToPlace, false, Enum.KeyCode.E)
-UIHandler.updateSelectedToPlace("Placement Not Active")
+CAS:BindAction("PlaceSelectedObject", InputHandler.placeSelectedObject, false, Enum.UserInputType.MouseButton1)
+UIHandler.updateSelectedToPlace("Placement Inactive")
 
 return InputHandler

@@ -1,5 +1,5 @@
 --!strict
-
+--!native
 local DEF_WEIGHT_INIT = 1
 local DEF_COST_INIT = math.huge
 
@@ -10,7 +10,8 @@ export type GridBase = typeof(setmetatable({} :: {
     width: number,
     height: number,
     weight: buffer,
-    cost: buffer
+    cost: buffer,
+    objects: {},
 }, GridBase))
 
 local function initializeBuffers(weight: buffer, cost: buffer, n: number, weight_init: number, cost_init: number)
@@ -32,6 +33,7 @@ function GridBase.new(width: number, height: number,
     self.height = height
     self.weight = buffer.create(n * 4)
     self.cost = buffer.create(n * 4)
+    self.objects = {}
 
     initializeBuffers(self.weight, self.cost, n, wi, ci)
 
@@ -55,6 +57,14 @@ function GridBase.coordinates(self: GridBase, i: number): Vector2
 	return Vector2.new(i % self.width, i // self.width) + Vector2.one
 end
 
+function GridBase.initializeBuffers(self: GridBase, weight_init: number?, cost_init: number?)
+    local wi = weight_init or DEF_WEIGHT_INIT
+    local ci = cost_init or DEF_COST_INIT
+
+    local n = self.width * self.height
+    initializeBuffers(self.weight, self.cost, n, wi, ci)
+end 
+
 function GridBase.getWeight(self: GridBase, i: number): number
     return buffer.readf32(self.weight, i * 4)
 end
@@ -71,5 +81,28 @@ function GridBase.setCost(self: GridBase, i: number, c: number)
     buffer.writef32(self.cost, i * 4, c)
 end
 
+function GridBase.addObjectData(self: GridBase, i: number, objectData: {}, override: boolean): ({}?)
+    if self.objects[i] ~= nil then
+        if not override then return end 
+
+        local overridden = self.objects[i]
+        self.objects[i] = objectData
+
+        return overridden
+    end 
+
+    self.objects[i] = objectData
+    
+    return nil 
+end 
+
+function GridBase.removeObjectDataAtIndex(self: GridBase, i: number): {}?
+    if self.objects[i] == nil then return end 
+
+    local removed = self.objects[i]
+    self.objects[i] = nil
+    
+    return removed
+end
 
 return GridBase
