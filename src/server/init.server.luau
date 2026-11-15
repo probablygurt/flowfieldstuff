@@ -12,11 +12,3 @@ local mapGrid = FieldSolver.newGridFromPart(mapBase, cellSize)
 
 RemotesHandler.Grid = mapGrid
 FieldSolver.createGridParts(mapGrid, mapBase, cellSize)
-
-local function computeCosts()
-    local t = os.clock()
-    FieldSolver.computeCosts(mapGrid)
-    print(`finished in {(os.clock() - t) * 1000} ms`)
-end
-
-computeCosts()

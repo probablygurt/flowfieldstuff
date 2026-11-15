@@ -1,5 +1,4 @@
 --!native
-
 local GridHeap = {}
 GridHeap.__index = GridHeap
 
