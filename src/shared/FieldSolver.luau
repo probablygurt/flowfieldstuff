@@ -58,7 +58,7 @@ function FieldSolver.createGridParts(grid: GridBase, base: BasePart, cellSize: V
             cell.Anchored, cell.CanCollide = true, false
             cell.CanTouch, cell.CanQuery = false, false
 			cell.TopSurface = Enum.SurfaceType.Smooth
-            cell.Transparency = 0.9
+            cell.Transparency = 0.25
             cell.Size = cellPartSize
 			cell.CFrame = topLeft * CFrame.new((x - 1) * cellSize.X, 0, (y - 1) * cellSize.Y)
             cell.Name = `Cell{index}`
@@ -139,7 +139,6 @@ function FieldSolver.createGradient(grid: GridBase, maxCost: number, map: Model,
         if part == nil then continue end
         
         local alpha = (cost / maxCost)
-        part.Transparency = 0
         part.Color = c1:Lerp(c2, alpha)
     end
 end
@@ -166,12 +165,20 @@ function FieldSolver.initObjects(grid: GridBase)
     grid:initializeBuffers()
 
     for index, objectData in grid.objects do
+        local weight = grid:getWeight(index)
+        
         if objectData.Weight ~= nil then
-            grid:setWeight(index, objectData.Weight)
+            grid:setWeight(index, weight + objectData.Weight)
         end
 
         if objectData.Cost ~= nil then
             grid:setCost(index, objectData.Cost)
+        end
+    end
+
+    for index, objectData in grid.objects do
+        if objectData.Init ~= nil then
+            objectData.Init(grid, index)
         end
     end
 end
@@ -224,6 +231,7 @@ function FieldSolver.computeCostsQueue(grid: GridBase, stepWeight: StepWeight?)
     local costs = table.create(n, 0)
     local improved = table.create(n, false)
 
+    local solidSources = {}
     local gridHeap = GridHeap.new()
 
     local p = 0
@@ -233,15 +241,48 @@ function FieldSolver.computeCostsQueue(grid: GridBase, stepWeight: StepWeight?)
 
             local weight = grid:getWeight(p - 1)
             if weight < 0 then return end 
-            if weight == math.huge then continue end 
+
+            local cost = grid:getCost(p - 1)
+            if weight == math.huge then
+                if cost ~= math.huge then
+                    table.insert(solidSources, p)
+                end
+
+                continue
+             end 
 
             walkable[p] = true 
-            
-            local cost = grid:getCost(p - 1)
             costs[p] = cost
             if cost == math.huge then continue end 
 
             gridHeap:push(p, cost)
+        end
+    end
+
+    for _, sourcePos in solidSources do
+        local sourceIndex = sourcePos - 1
+        local cy = sourceIndex // grid.width + 1
+        local cx = sourceIndex % grid.width + 1
+        local cost = grid:getCost(sourceIndex)
+
+        for d = 1, #DIR_COST do
+            local nx, ny = cx + DIR_X[d], cy + DIR_Y[d]
+            if not grid:isValid(nx, ny) then continue end 
+
+            local np = (ny - 1) * grid.width + nx
+            if not walkable[np] then continue end 
+
+            if d > 4 then
+                if not walkable[(cy - 1) * grid.width + nx] then continue end
+                if not walkable[(ny - 1) * grid.width + cx] then continue end  
+            end
+
+            local candidate = cost + DIR_COST[d]
+            if candidate < costs[np] then
+                costs[np] = candidate
+                improved[np] = true
+                gridHeap:push(np, candidate)
+            end
         end
     end
 
@@ -289,11 +330,6 @@ function FieldSolver.tracePath(grid: GridBase, origin: Vector2, stepWeight: Step
     local currX, currY, currIndex = origin.X, origin.Y, grid:index(origin.X, origin.Y)
     
     for i = 1, n do
-        -- Get neighbours with lowest cost
-        -- Get neighbour with lowest cost...
-        -- If neighbour with lowest cost is less than current cost, then add to path then proceed
-        -- If not, return path
-
         local cost = grid:getCost(currIndex)
         local lowest = cost
         local lowestI = -1
@@ -315,6 +351,7 @@ function FieldSolver.tracePath(grid: GridBase, origin: Vector2, stepWeight: Step
         
         currX = lowestI % grid.width + 1
         currY = lowestI // grid.width + 1
+        currIndex = lowestI
     end
 
     local base = workspace.Map.PrimaryPart
@@ -330,6 +367,8 @@ function FieldSolver.tracePath(grid: GridBase, origin: Vector2, stepWeight: Step
             task.delay(5, function()
                 part.Color = prevColor
             end)
+
+            task.wait()
         end
     end
 

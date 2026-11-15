@@ -17,7 +17,8 @@ local RemotesHandler = {
 RemotesHandler.PlaceableObjects = {
     "Core",
     "Wall",
-    "Mud"
+    "Mud",
+    "Tower"
 }
 
 function RemotesHandler.onRequestPlaceableObjects(player: Player): {string}
