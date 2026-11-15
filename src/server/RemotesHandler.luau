@@ -47,7 +47,9 @@ function RemotesHandler.onPlaceObject(player: Player, gridCoords: Vector2, toPla
     FieldSolver.computeCostsQueue(grid)
     warn(`computeCosts: {string.format("%.2f", (os.clock() - t) * 1000)}ms`)
 
-    FieldSolver.createGradient(grid, FieldSolver.getMaxCost(grid), workspace.Map, Color3.fromRGB(0, 255, 0), Color3.fromRGB(255, 0, 255))
+    local maxWeight = FieldSolver.getMaxWeight(grid)
+    local fromW, toW = Color3.fromRGB(155, 155, 155), Color3.fromRGB(255, 0, 0)
+    FieldSolver.createGradient(grid, maxWeight, workspace.Map, fromW, toW, FieldSolver.GradientType.Weight)
 end
 
 function RemotesHandler.onTracePath(player: Player, gridCoords: Vector2)

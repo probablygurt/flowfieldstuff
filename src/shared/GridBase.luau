@@ -1,4 +1,3 @@
---!strict
 --!native
 local DEF_WEIGHT_INIT = 1
 local DEF_COST_INIT = math.huge
@@ -11,7 +10,7 @@ export type GridBase = typeof(setmetatable({} :: {
     height: number,
     weight: buffer,
     cost: buffer,
-    objects: {},
+    objects: {[number]: any},
 }, GridBase))
 
 local function initializeBuffers(weight: buffer, cost: buffer, n: number, weight_init: number, cost_init: number)
@@ -81,7 +80,7 @@ function GridBase.setCost(self: GridBase, i: number, c: number)
     buffer.writef32(self.cost, i * 4, c)
 end
 
-function GridBase.addObjectData(self: GridBase, i: number, objectData: {}, override: boolean): ({}?)
+function GridBase.addObjectData(self: GridBase, i: number, objectData: {}, override: boolean): {}?
     if self.objects[i] ~= nil then
         if not override then return end 
 

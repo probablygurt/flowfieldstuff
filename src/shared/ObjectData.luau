@@ -40,7 +40,9 @@ local function isObstructed(grid: GridBase.GridBase, x0: number, y0: number, x1:
     return false
 end
 
-local function drawCircle(grid: GridBase.GridBase, i: number, rad: number, checkObstructed: boolean?)
+local function drawCircle(grid: GridBase.GridBase, i: number, rad: number, checkObstructed: boolean?): {number}
+    local indices = {}
+
     checkObstructed = checkObstructed or true
 
     local cy = i // grid.width + 1
@@ -60,9 +62,11 @@ local function drawCircle(grid: GridBase.GridBase, i: number, rad: number, check
             if checkObstructed and isObstructed(grid, cx, cy, x, y) then continue end
 
             local index = grid:index(x, y)
-            grid:setWeight(index, grid:getWeight(index) + 2)
+            table.insert(indices, index)
         end
     end
+
+    return indices
 end
 
 local ObjectData = {
@@ -70,7 +74,7 @@ local ObjectData = {
         Cost = 0,
     },
     Mud = {
-        Weight = 100
+        Weight = 5,
     },
     Wall = {
         Weight = math.huge
@@ -80,7 +84,11 @@ local ObjectData = {
         Cost = 20,
 
         Init = function(grid: GridBase.GridBase, i: number)
-            drawCircle(grid, i, 10)
+            local weightAdd = 2
+
+            for _, index in drawCircle(grid, i, 10) do
+                grid:setWeight(index, grid:getWeight(index) + weightAdd)
+            end
         end
     }
 }

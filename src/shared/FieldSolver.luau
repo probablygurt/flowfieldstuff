@@ -8,7 +8,12 @@ local DIR_Y = {0, 0, -1, 1, -1, 1, 1, -1}
 local OPP = {2, 1, 4, 3, 6, 5, 8, 7} 
 local DIR_COST = {10, 10, 10, 10, 14, 14, 14, 14}
 
-local FieldSolver = {}
+local FieldSolver = {
+    GradientType = {
+        Cost = 0,
+        Weight = 1
+    }
+}
 
 type StepWeight = (grid: GridBase, x: number, y: number, d: number) -> (number?, number?)
 export type GridBase = GridBase.GridBase
@@ -108,6 +113,18 @@ function FieldSolver.getMaxCost(grid: GridBase): number
 	return max
 end
 
+function FieldSolver.getMaxWeight(grid: GridBase): number
+    local max = -math.huge
+	
+    for i = 0, grid.width * grid.height - 1 do
+		local c = grid:getWeight(i)
+		if c ~= math.huge and c > max then max = c end
+	end
+
+	return max
+end
+
+
 function FieldSolver.forEachCell(grid: GridBase, cells: {number}?, callback: (i: number) -> ())
     local all = cells == nil
 
@@ -126,7 +143,11 @@ function FieldSolver.forEachCell(grid: GridBase, cells: {number}?, callback: (i:
     end
 end
 
-function FieldSolver.createGradient(grid: GridBase, maxCost: number, map: Model, c1: Color3, c2: Color3)
+function FieldSolver.createGradient(
+    grid: GridBase, max: number, map: Model, c1: Color3, c2: Color3, gradientType: number?)
+
+    gradientType = gradientType or FieldSolver.GradientType.Cost
+
     local n = grid.width * grid.height
     local base = map.PrimaryPart
     local gridParts = base:FindFirstChild("GridParts") :: Folder?
@@ -134,11 +155,19 @@ function FieldSolver.createGradient(grid: GridBase, maxCost: number, map: Model,
     if gridParts == nil then return end 
 
     for i = 0, n - 1 do
-        local cost = grid:getCost(i)
         local part = gridParts:FindFirstChild(`Cell{i}`) :: BasePart
         if part == nil then continue end
         
-        local alpha = (cost / maxCost)
+        local alpha = 0
+        
+        if gradientType == FieldSolver.GradientType.Cost then
+            local cost = grid:getCost(i)
+            alpha = (cost / max)
+        elseif gradientType == FieldSolver.GradientType.Weight then
+            local weight = grid:getWeight(i)
+            alpha = (weight / max)
+        end
+
         part.Color = c1:Lerp(c2, alpha)
     end
 end
