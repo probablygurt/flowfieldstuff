@@ -10,8 +10,19 @@ export type GridBase = typeof(setmetatable({} :: {
     height: number,
     weight: buffer,
     cost: buffer,
-    objects: {[number]: any},
+    objects: {[number]: ObjectData},
 }, GridBase))
+
+export type ObjectData = {
+    Weight: number?,
+    Cost: number?,
+    GetObjectArea: ((grid: GridBase, i: number) -> ObjectArea)?
+}
+
+export type ObjectArea = {
+    Weights: {number}?,
+    Costs: {number}?
+}
 
 local function initializeBuffers(weight: buffer, cost: buffer, n: number, weight_init: number, cost_init: number)
     for i = 0, n - 1 do
@@ -80,7 +91,7 @@ function GridBase.setCost(self: GridBase, i: number, c: number)
     buffer.writef32(self.cost, i * 4, c)
 end
 
-function GridBase.addObjectData(self: GridBase, i: number, objectData: {}, override: boolean): {}?
+function GridBase.addObjectData(self: GridBase, i: number, objectData: ObjectData, override: boolean): ObjectData?
     if self.objects[i] ~= nil then
         if not override then return end 
 

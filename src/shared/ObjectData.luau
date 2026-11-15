@@ -53,7 +53,7 @@ local function drawCircle(grid: GridBase.GridBase, i: number, rad: number, check
 
     for y = top, bot do
         local dy = y - cy
-        local dx = math.sqrt(rad*rad - dy*dy)
+        local dx = math.sqrt(rad * rad - dy * dy)
         local left = math.ceil(cx - dx)
         local right = math.floor(cx + dx)
 
@@ -69,7 +69,7 @@ local function drawCircle(grid: GridBase.GridBase, i: number, rad: number, check
     return indices
 end
 
-local ObjectData = {
+local ObjectData: {[string]: GridBase.ObjectArea} = {
     Core = {
         Cost = 0,
     },
@@ -82,13 +82,19 @@ local ObjectData = {
     Tower = {
         Weight = math.huge,
         Cost = 20,
+        GetObjectArea = function(grid, i)
+            local WEIGHT_ADD = 2
 
-        Init = function(grid: GridBase.GridBase, i: number)
-            local weightAdd = 2
+            local objectArea: GridBase.ObjectArea = {}
+            local weight = {}
 
-            for _, index in drawCircle(grid, i, 10) do
-                grid:setWeight(index, grid:getWeight(index) + weightAdd)
+            for _, index in drawCircle(grid, i, 10) do 
+                weight[index] = WEIGHT_ADD
             end
+
+            objectArea.Weights = weight
+
+            return objectArea
         end
     }
 }

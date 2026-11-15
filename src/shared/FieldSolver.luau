@@ -194,9 +194,8 @@ function FieldSolver.initObjects(grid: GridBase)
     grid:initializeBuffers()
 
     for index, objectData in grid.objects do
-        local weight = grid:getWeight(index)
-        
         if objectData.Weight ~= nil then
+            local weight = grid:getWeight(index)
             grid:setWeight(index, weight + objectData.Weight)
         end
 
@@ -206,8 +205,19 @@ function FieldSolver.initObjects(grid: GridBase)
     end
 
     for index, objectData in grid.objects do
-        if objectData.Init ~= nil then
-            objectData.Init(grid, index)
+        if objectData.GetObjectArea ~= nil then
+            local objectArea = objectData.GetObjectArea(grid, index)
+
+            if objectArea.Weights ~= nil then
+                for i, w in objectArea.Weights do
+                    local weight = grid:getWeight(i)
+                    grid:setWeight(i, weight + w)
+                end
+            end
+
+            if objectArea.Costs ~= nil then
+                -- unimplemented
+            end
         end
     end
 end
@@ -316,12 +326,12 @@ function FieldSolver.computeCostsQueue(grid: GridBase, stepWeight: StepWeight?)
     end
 
     while gridHeap.size > 0 do
-        local cell, curr = gridHeap:pop()
+        local pos, curr = gridHeap:pop()
 
-        if curr ~= costs[cell] then continue end 
+        if curr ~= costs[pos] then continue end 
 
-        local y = (cell - 1) // grid.width + 1
-        local x = cell - (y - 1) * grid.width
+        local y = (pos - 1) // grid.width + 1
+        local x = pos - (y - 1) * grid.width
 
         for d = 1, #DIR_COST do
             local ix, iy = x + DIR_X[d], y + DIR_Y[d]
