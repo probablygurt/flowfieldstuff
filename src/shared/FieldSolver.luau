@@ -1,3 +1,4 @@
+local Entities = require(script.Parent.Entities)
 local GridBase = require(script.Parent.GridBase)
 local GridHeap = require(script.Parent.GridHeap)
 
@@ -16,10 +17,38 @@ local FieldSolver = {
 }
 
 type StepWeight = (grid: GridBase, x: number, y: number, d: number) -> (number?, number?)
-export type GridBase = GridBase.GridBase
+type GridBase = GridBase.GridBase
 
 local function isDecimal(x: number): boolean
     return x % 1 ~= 0
+end
+
+local function scaledWeight(w: number, profile: Entities.Profile?, category: string?, target: string?): number
+    if w == math.huge or profile == nil then return w end
+  
+    local multi = 1
+
+    if target ~= nil then
+        multi = profile.WeightMultiplier.Targets[target] or 1
+    elseif category ~= nil then
+        multi = profile.WeightMultiplier.Category[category] or 1
+    end
+
+    return w * multi
+end
+
+local function scaledCost(c: number, profile: Entities.Profile?, category: string?, target: string?): number
+    if c == math.huge or profile == nil then return c end
+
+    local interest = 1
+
+    if target ~= nil then
+        interest = profile.Interest.Targets[target] or 1
+    elseif category ~= nil then
+        interest = profile.Interest.Category[category] or 1
+    end
+
+    return c / interest
 end
 
 function FieldSolver.newGridFromPart(base: BasePart, cellSize: Vector2): GridBase?
@@ -190,28 +219,30 @@ function FieldSolver.stepWeight(grid: GridBase, x: number, y: number, d: number)
     return ni, weight * DIR_COST[d]
 end
 
-function FieldSolver.initObjects(grid: GridBase)
+function FieldSolver.initObjects(grid: GridBase, profile: Entities.Profile?)
     grid:initializeBuffers()
 
-    for index, objectData in grid.objects do
-        if objectData.Weight ~= nil then
-            local weight = grid:getWeight(index)
-            grid:setWeight(index, weight + objectData.Weight)
+    for index, data in grid.objects do
+        if data.Weight ~= nil then
+            local weight = scaledWeight(grid:getWeight(index), profile, data.Category, data.Name)
+            grid:setWeight(index, weight + data.Weight)
         end
 
-        if objectData.Cost ~= nil then
-            grid:setCost(index, objectData.Cost)
+        if data.Cost ~= nil then
+            local scaledCost = scaledCost(data.Cost, profile, data.Category, data.Name)
+            grid:setCost(index, scaledCost)
         end
     end
 
-    for index, objectData in grid.objects do
-        if objectData.GetObjectArea ~= nil then
-            local objectArea = objectData.GetObjectArea(grid, index)
+    for index, data in grid.objects do
+        if data.GetObjectArea ~= nil then
+            local objectArea = data.GetObjectArea(grid, index)
 
             if objectArea.Weights ~= nil then
                 for i, w in objectArea.Weights do
                     local weight = grid:getWeight(i)
-                    grid:setWeight(i, weight + w)
+                    local scaledW = scaledWeight(w, profile, data.Category, data.Name)
+                    grid:setWeight(i, weight + scaledW)
                 end
             end
 

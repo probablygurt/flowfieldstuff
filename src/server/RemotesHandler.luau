@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Entities = require(ReplicatedStorage.Shared.Entities)
 local FieldSolver = require(ReplicatedStorage.Shared.FieldSolver)
 local GridBase = require(ReplicatedStorage.Shared.GridBase)
 local ObjectData = require(ReplicatedStorage.Shared.ObjectData)
@@ -11,15 +12,15 @@ local placeObject = remotes.PlaceObject :: RemoteEvent
 local tracePath = remotes.TracePath :: RemoteEvent
 
 local RemotesHandler = {
-    Grid = nil
+    Grid = nil,
+    PlaceableObjects = {}
 }
 
-RemotesHandler.PlaceableObjects = {
-    "Core",
-    "Wall",
-    "Mud",
-    "Tower"
-}
+local function initPlaceableObjects()
+    for name, _ in ObjectData do
+        table.insert(RemotesHandler.PlaceableObjects, name)
+    end
+end
 
 function RemotesHandler.onRequestPlaceableObjects(player: Player): {string}
     return RemotesHandler.PlaceableObjects
@@ -41,15 +42,17 @@ function RemotesHandler.onPlaceObject(player: Player, gridCoords: Vector2, toPla
 
     grid:addObjectData(index, ObjectData[toPlace])
     print(`Added {toPlace} at {gridCoords} | Index {index}`)
-    FieldSolver.initObjects(grid)
+    FieldSolver.initObjects(grid, Entities.Profiles.Profile1)
 
     local t = os.clock()
     FieldSolver.computeCostsQueue(grid)
     warn(`computeCosts: {string.format("%.2f", (os.clock() - t) * 1000)}ms`)
 
     local maxWeight = FieldSolver.getMaxWeight(grid)
+    local maxCost = FieldSolver.getMaxCost(grid)
     local fromW, toW = Color3.fromRGB(155, 155, 155), Color3.fromRGB(255, 0, 0)
-    FieldSolver.createGradient(grid, maxWeight, workspace.Map, fromW, toW, FieldSolver.GradientType.Weight)
+    local fromC, toC = Color3.fromRGB(0, 255, 0), Color3.fromRGB(255, 0, 255)
+    FieldSolver.createGradient(grid, maxCost, workspace.Map, fromC, toC, FieldSolver.GradientType.Cost)
 end
 
 function RemotesHandler.onTracePath(player: Player, gridCoords: Vector2)
@@ -60,8 +63,10 @@ function RemotesHandler.onTracePath(player: Player, gridCoords: Vector2)
     if not grid:isValid(gridCoords.X, gridCoords.Y) then return end 
 end
 
+initPlaceableObjects()
 requestPlaceableObjects.OnServerInvoke = RemotesHandler.onRequestPlaceableObjects
 requestGridSize.OnServerInvoke = RemotesHandler.onRequestGridSize
 placeObject.OnServerEvent:Connect(RemotesHandler.onPlaceObject)
 tracePath.OnServerEvent:Connect(RemotesHandler.onTracePath)
+
 return RemotesHandler

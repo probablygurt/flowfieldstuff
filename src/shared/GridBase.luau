@@ -14,6 +14,8 @@ export type GridBase = typeof(setmetatable({} :: {
 }, GridBase))
 
 export type ObjectData = {
+    Name: string,
+    Category: string?,
     Weight: number?,
     Cost: number?,
     GetObjectArea: ((grid: GridBase, i: number) -> ObjectArea)?
