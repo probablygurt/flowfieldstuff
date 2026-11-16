@@ -7,12 +7,13 @@ local UIHandler = require(script.Parent.UIHandler)
 local remotes = ReplicatedStorage.Remotes :: Folder
 local requestPlaceableObjects = remotes.RequestPlaceableObjects :: RemoteFunction
 local placeObject = remotes.PlaceObject :: RemoteEvent
+local destroyObject = remotes.DestroyObject :: RemoteEvent
 local tracePath = remotes.TracePath :: RemoteEvent
 
 local InputHandler = {}
 
 local placeableObjects = requestPlaceableObjects:InvokeServer()
-local placementToggled = false
+local placementMode = PlacementController.Mode.None
 local selectedToPlaceIndex = 1
 
 local function incrementSelected(d: number): number
@@ -26,22 +27,47 @@ local function incrementSelected(d: number): number
     return selectedToPlaceIndex
 end
 
-function InputHandler.togglePlacement(_, state: Enum.UserInputState)
+function InputHandler.toggleBuild(_, state: Enum.UserInputState)
     if state ~= Enum.UserInputState.Begin then return end
 
-    placementToggled = not placementToggled
+    local isBuildMode = placementMode == PlacementController.Mode.Build
+    placementMode = if isBuildMode then PlacementController.Mode.None else PlacementController.Mode.Build
     
-    if placementToggled then
+    if placementMode == PlacementController.Mode.Build then
         PlacementController.Start()
         UIHandler.updateSelectedToPlace(placeableObjects[selectedToPlaceIndex], selectedToPlaceIndex)
-    else 
+    
+        CAS:BindAction("PlaceObject", InputHandler.onMouseClick, false, Enum.UserInputType.MouseButton1)
+    elseif placementMode == PlacementController.Mode.None then
         PlacementController.Stop()
         UIHandler.updateSelectedToPlace("Placement Inactive")
+
+        CAS:UnbindAction("PlaceObject")
+    end
+end
+
+function InputHandler.toggleDestroy(_, state: Enum.UserInputState)
+    if state ~= Enum.UserInputState.Begin then return end
+
+    local isDestroyMode = placementMode == PlacementController.Mode.Destroy
+    placementMode = if isDestroyMode then PlacementController.Mode.None else PlacementController.Mode.Destroy
+    
+    if placementMode == PlacementController.Mode.Destroy then
+        PlacementController.Start()
+        UIHandler.updateSelectedToPlace("Select object to destroy")
+
+        CAS:BindAction("DestroyObject", InputHandler.onMouseClick, false, Enum.UserInputType.MouseButton1)
+    elseif placementMode == PlacementController.Mode.None then
+        PlacementController.Stop()
+        UIHandler.updateSelectedToPlace("Placement Inactive")
+
+        CAS:UnbindAction("DestroyObject")
     end
 end
 
 function InputHandler.cycleSelectedToPlace(actionName: string, state: Enum.UserInputState)
-    if placementToggled == false or state ~= Enum.UserInputState.Begin then return end 
+    if placementMode ~= PlacementController.Mode.Build then return end
+    if state ~= Enum.UserInputState.Begin then return end 
 
     if actionName == "CycleSelectedToPlaceL" then
         incrementSelected(-1)
@@ -52,22 +78,26 @@ function InputHandler.cycleSelectedToPlace(actionName: string, state: Enum.UserI
     UIHandler.updateSelectedToPlace(placeableObjects[selectedToPlaceIndex], selectedToPlaceIndex)
 end
 
-function InputHandler.placeSelectedObject(_, state: Enum.UserInputState)
-    if placementToggled == false or state ~= Enum.UserInputState.Begin then return end 
+function InputHandler.onMouseClick(actionName: string, state: Enum.UserInputState)
+    if state ~= Enum.UserInputState.Begin then return end 
 
-    placeObject:FireServer(PlacementController.GridCoords, placeableObjects[selectedToPlaceIndex])
+    if actionName == "PlaceObject" and placementMode == PlacementController.Mode.Build then
+        placeObject:FireServer(PlacementController.GridCoords, placeableObjects[selectedToPlaceIndex])
+    elseif actionName == "DestroyObject" and placementMode == PlacementController.Mode.Destroy then
+        destroyObject:FireServer(PlacementController.GridCoords)
+    end
 end
 
 function InputHandler.tracePath(_, state: Enum.UserInputState)
-    if placementToggled == false or state ~= Enum.UserInputState.Begin then return end 
+    if state ~= Enum.UserInputState.Begin then return end 
 
     tracePath:FireServer(PlacementController.GridCoords)
 end
 
-CAS:BindAction("TogglePlacement", InputHandler.togglePlacement, false, Enum.KeyCode.F)
+CAS:BindAction("ToggleBuild", InputHandler.toggleBuild, false, Enum.KeyCode.F)
+CAS:BindAction("ToggleDestroy", InputHandler.toggleDestroy, false, Enum.KeyCode.R)
 CAS:BindAction("CycleSelectedToPlaceL", InputHandler.cycleSelectedToPlace, false, Enum.KeyCode.Q)
 CAS:BindAction("CycleSelectedToPlaceR", InputHandler.cycleSelectedToPlace, false, Enum.KeyCode.E)
-CAS:BindAction("PlaceSelectedObject", InputHandler.placeSelectedObject, false, Enum.UserInputType.MouseButton1)
 CAS:BindAction("TracePath", InputHandler.tracePath, false, Enum.KeyCode.T)
 UIHandler.updateSelectedToPlace("Placement Inactive")
 

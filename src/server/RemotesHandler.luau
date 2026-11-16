@@ -10,6 +10,7 @@ local remotes = ReplicatedStorage.Remotes :: Folder
 local requestPlaceableObjects = remotes.RequestPlaceableObjects :: RemoteFunction
 local requestGridSize = remotes.RequestGridSize :: RemoteFunction
 local placeObject = remotes.PlaceObject :: RemoteEvent
+local destroyObject = remotes.DestroyObject :: RemoteEvent
 local tracePath = remotes.TracePath :: RemoteEvent
 
 local RemotesHandler = {
@@ -17,10 +18,24 @@ local RemotesHandler = {
     PlaceableObjects = {}
 }
 
+type GridBase = GridBase.GridBase
+
 local function initPlaceableObjects()
     for name, _ in ObjectData do
         table.insert(RemotesHandler.PlaceableObjects, name)
     end
+end
+
+local function solveMap(grid: GridBase)
+    FieldSolver.initObjects(grid, Entities.Profiles.Profile1)
+    FieldSolver.computeCostsQueue(grid)
+
+    local maxWeight = FieldSolver.getMaxWeight(grid)
+    local maxCost = FieldSolver.getMaxCost(grid)
+    local fromW, toW = Color3.fromRGB(155, 155, 155), Color3.fromRGB(255, 0, 0)
+    local fromC, toC = Color3.fromRGB(0, 255, 0), Color3.fromRGB(255, 0, 255)
+
+    FieldSolver.createGradient(grid, maxCost, workspace.Map, fromC, toC, FieldSolver.GradientType.Cost)
 end
 
 function RemotesHandler.onRequestPlaceableObjects(player: Player): {string}
@@ -34,7 +49,7 @@ function RemotesHandler.onRequestGridSize(player: Player): Vector2?
 end
 
 function RemotesHandler.onPlaceObject(player: Player, gridCoords: Vector2, toPlace: string)
-    local grid = RemotesHandler.Grid :: GridBase.GridBase
+    local grid = RemotesHandler.Grid :: GridBase
 
     if not grid:isValid(gridCoords.X, gridCoords.Y) then return end 
     if table.find(RemotesHandler.PlaceableObjects, toPlace) == nil then return end
@@ -44,24 +59,28 @@ function RemotesHandler.onPlaceObject(player: Player, gridCoords: Vector2, toPla
     grid:addObject(index, toPlace)
     print(`Added {toPlace} at {gridCoords} | Index {index}`)
 
-    FieldSolver.initObjects(grid, Entities.Profiles.Profile1)
+    solveMap(grid)
+end
 
-    local t = os.clock()
-    FieldSolver.computeCostsQueue(grid)
-    warn(`computeCosts: {string.format("%.2f", (os.clock() - t) * 1000)}ms`)
+function RemotesHandler.onDestroyObject(player: Player, gridCoords: Vector2)
+    local grid = RemotesHandler.Grid :: GridBase
 
-    local maxWeight = FieldSolver.getMaxWeight(grid)
-    local maxCost = FieldSolver.getMaxCost(grid)
-    local fromW, toW = Color3.fromRGB(155, 155, 155), Color3.fromRGB(255, 0, 0)
-    local fromC, toC = Color3.fromRGB(0, 255, 0), Color3.fromRGB(255, 0, 255)
+    if not grid:isValid(gridCoords.X, gridCoords.Y) then return end
 
-    FieldSolver.createGradient(grid, maxCost, workspace.Map, fromC, toC, FieldSolver.GradientType.Cost)
+    local index = grid:index(gridCoords.X, gridCoords.Y)
+    local removed = grid:removeObject(index)
+
+    if removed ~= nil then
+        print(`Removed {removed} at {gridCoords} | Index {index}`)
+    end
+
+    solveMap(grid)
 end
 
 function RemotesHandler.onTracePath(player: Player, gridCoords: Vector2)
     local grid = RemotesHandler.Grid :: GridBase.GridBase
 
-    local path = FieldSolver.tracePath(grid, gridCoords)
+    FieldSolver.tracePath(grid, gridCoords)
 
     if not grid:isValid(gridCoords.X, gridCoords.Y) then return end 
 end
@@ -70,6 +89,7 @@ initPlaceableObjects()
 requestPlaceableObjects.OnServerInvoke = RemotesHandler.onRequestPlaceableObjects
 requestGridSize.OnServerInvoke = RemotesHandler.onRequestGridSize
 placeObject.OnServerEvent:Connect(RemotesHandler.onPlaceObject)
+destroyObject.OnServerEvent:Connect(RemotesHandler.onDestroyObject)
 tracePath.OnServerEvent:Connect(RemotesHandler.onTracePath)
 
 return RemotesHandler

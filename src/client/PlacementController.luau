@@ -9,6 +9,12 @@ local remotes = ReplicatedStorage.Remotes :: Folder
 local requestGridSize = remotes.RequestGridSize :: RemoteFunction
 
 local PlacementController = {
+    Mode = {
+        None = 0,
+        Build = 1,
+        Destroy = 2
+    },
+
     MouseRaycastParams = RaycastParams.new(),
     GridCoords = Vector2.zero
 }
