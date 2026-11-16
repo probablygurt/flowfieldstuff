@@ -4,7 +4,7 @@ local Types = require(script.Parent.Types)
 local GridHeap = {}
 GridHeap.__index = GridHeap
 
-export type GridHeap = typeof(setmetatable({} :: Types.GridHeapData, GridHeap))
+type GridHeap = Types.GridHeap
 
 function GridHeap.new(): GridHeap
     local self = {}
@@ -12,7 +12,7 @@ function GridHeap.new(): GridHeap
     self.costs = {}
     self.size = 0
 
-    return setmetatable(self, GridHeap)
+    return setmetatable(self, GridHeap) :: any
 end
 
 function GridHeap.push(self: GridHeap, cell: number, cost: number)

@@ -4,6 +4,11 @@ export type GridHeapData = {
     size: number,
 }
 
+export type GridHeap = GridHeapData & {
+    push: (self: GridHeap, cell: number, cost: number) -> (),
+    pop: (self: GridHeap) -> (number?, number?)
+}
+
 export type GridData = {
     width: number,
     height: number,
@@ -38,6 +43,28 @@ export type ObjectData = {
 export type ObjectArea = {
     Weights: {number}?,
     Costs: {number}?
+}
+
+export type EntityProfile = {
+    Name: string,
+    WeightMultiplier: {
+        Category: {[string]: number},
+        Targets: {[string]: number} -- Overrides category weight multis
+    },
+    Interest: { 
+        Category: {[string]: number},
+        Targets: {[string]: number} -- Overrides category interest multis
+    }
+}
+
+
+export type PathfinderData = {
+    grid: GridBase,
+    map: Model,
+}
+
+export type Pathfinder = PathfinderData & {
+
 }
 
 return {}

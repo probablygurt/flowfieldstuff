@@ -7,9 +7,9 @@ local DEF_COST_INIT = math.huge
 local GridBase = {}
 GridBase.__index = GridBase
 
-export type ObjectData = Types.ObjectData
-export type ObjectArea = Types.ObjectArea
-export type GridBase = typeof(setmetatable({} :: Types.GridData, GridBase))
+type ObjectData = Types.ObjectData
+type ObjectArea = Types.ObjectArea
+type GridBase = Types.GridBase
 
 local function initializeBuffers(weight: buffer, cost: buffer, n: number, weight_init: number, cost_init: number)
     for i = 0, n - 1 do
@@ -34,7 +34,7 @@ function GridBase.new(width: number, height: number,
 
     initializeBuffers(self.weight, self.cost, n, wi, ci)
 
-    return setmetatable(self, GridBase)
+    return setmetatable(self, GridBase) :: any
 end
 
 function GridBase.isValid(self: GridBase, x: number, y: number): boolean

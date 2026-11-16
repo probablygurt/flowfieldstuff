@@ -1,16 +1,8 @@
-local Entities = {}
+local ServerScriptService = game:GetService("ServerScriptService")
 
-export type Profile = {
-    Name: string,
-    WeightMultiplier: {
-        Category: {[string]: number},
-        Targets: {[string]: number} -- Overrides category weight multis
-    },
-    Interest: { 
-        Category: {[string]: number},
-        Targets: {[string]: number} -- Overrides category interest multis
-    }
-}
+local Types = require(ServerScriptService.Server.modules.Grid.Types)
+
+local Entities = {}
 
 Entities.Profiles = {
     Profile1 = {
@@ -28,6 +20,6 @@ Entities.Profiles = {
             }
         }
     }   
-}
+} :: {[string]: Types.EntityProfile}
 
 return Entities

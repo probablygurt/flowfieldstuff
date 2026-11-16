@@ -2,7 +2,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local GridBase = require(ServerScriptService.Server.modules.Grid.GridBase)
 local GridHeap = require(ServerScriptService.Server.modules.Grid.GridHeap)
-local Entities = require(script.Parent.Entities)
+local Types = require(ServerScriptService.Server.modules.Grid.Types)
 local ObjectData = require(script.Parent.ObjectData)
 
 local DEFAULT_CELL_PART_SIZE_Y = 1
@@ -20,13 +20,14 @@ local FieldSolver = {
 }
 
 type StepWeight = (grid: GridBase, x: number, y: number, d: number) -> (number?, number?)
-type GridBase = GridBase.GridBase 
+type GridBase = Types.GridBase 
+type EntityProfile = Types.EntityProfile
 
 local function isDecimal(x: number): boolean
     return x % 1 ~= 0
 end
 
-local function scaledWeight(w: number, profile: Entities.Profile?, category: string?, target: string?): number
+local function scaledWeight(w: number, profile: EntityProfile?, category: string?, target: string?): number
     if w == math.huge or profile == nil then return w end
   
     local multi = 1
@@ -40,7 +41,7 @@ local function scaledWeight(w: number, profile: Entities.Profile?, category: str
     return w * multi
 end
 
-local function scaledCost(c: number, profile: Entities.Profile?, category: string?, target: string?): number
+local function scaledCost(c: number, profile: EntityProfile?, category: string?, target: string?): number
     if c == math.huge or profile == nil then return c end
 
     local interest = 1
@@ -68,7 +69,7 @@ function FieldSolver.newGridFromPart(base: BasePart, cellSize: Vector2): GridBas
     return GridBase.new(gridSize.X, gridSize.Y)
 end
 
-function FieldSolver.createGridParts(grid: GridBase, base: BasePart, cellSize: Vector2)
+function FieldSolver.createGridParts(grid: GridBase, base: BasePart, cellSize: Vector2): (Vector3, CFrame)
     local baseSize = base.Size
     local baseCFrame = base.CFrame
     local topLeft = baseCFrame * CFrame.new(
@@ -102,6 +103,8 @@ function FieldSolver.createGridParts(grid: GridBase, base: BasePart, cellSize: V
             cell.Parent = folder
         end
     end
+
+    return cellPartSize, topLeft
 end
 
 function FieldSolver.setWeightRect(grid: GridBase, pos: Vector2, size: Vector2, w: number)
@@ -222,7 +225,7 @@ function FieldSolver.stepWeight(grid: GridBase, x: number, y: number, d: number)
     return ni, weight * DIR_COST[d]
 end
 
-function FieldSolver.initObjects(grid: GridBase, profile: Entities.Profile?)
+function FieldSolver.initObjects(grid: GridBase, profile: EntityProfile?)
     grid:initializeBuffers()
 
     for index, name in grid.objects do
@@ -443,9 +446,10 @@ function FieldSolver.tracePath(grid: GridBase, origin: Vector2, stepWeight: Step
 
             local prevColor = part.Color
             part.Color = Color3.fromRGB(255, 255, 0)
-            task.delay(5, function()
+            
+            --[[task.delay(5, function()
                 part.Color = prevColor
-            end)
+            end)--]]
 
             task.wait()
         end

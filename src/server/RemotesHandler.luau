@@ -3,8 +3,9 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Entities = require(ServerScriptService.Server.modules.Entities)
 local FieldSolver = require(ServerScriptService.Server.modules.FieldSolver)
-local GridBase = require(ServerScriptService.Server.modules.Grid.GridBase)
+local Types = require(ServerScriptService.Server.modules.Grid.Types)
 local ObjectData = require(ServerScriptService.Server.modules.ObjectData)
+local Pathfinder = require(ServerScriptService.Server.modules.Pathfinding.Pathfinder)
 
 local remotes = ReplicatedStorage.Remotes :: Folder
 local requestPlaceableObjects = remotes.RequestPlaceableObjects :: RemoteFunction
@@ -18,7 +19,7 @@ local RemotesHandler = {
     PlaceableObjects = {}
 }
 
-type GridBase = GridBase.GridBase
+type GridBase = Types.GridBase
 
 local function initPlaceableObjects()
     for name, _ in ObjectData do
@@ -78,9 +79,12 @@ function RemotesHandler.onDestroyObject(player: Player, gridCoords: Vector2)
 end
 
 function RemotesHandler.onTracePath(player: Player, gridCoords: Vector2)
-    local grid = RemotesHandler.Grid :: GridBase.GridBase
+    local grid = RemotesHandler.Grid :: GridBase
 
-    FieldSolver.tracePath(grid, gridCoords)
+    local path = FieldSolver.tracePath(grid, gridCoords)
+
+    local pathfinder = Pathfinder.new(grid, workspace.Map)
+    pathfinder:getWaypoints()
 
     if not grid:isValid(gridCoords.X, gridCoords.Y) then return end 
 end
