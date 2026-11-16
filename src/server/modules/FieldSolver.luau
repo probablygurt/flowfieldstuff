@@ -1,6 +1,9 @@
+local ServerScriptService = game:GetService("ServerScriptService")
+
+local GridBase = require(ServerScriptService.Server.modules.Grid.GridBase)
+local GridHeap = require(ServerScriptService.Server.modules.Grid.GridHeap)
 local Entities = require(script.Parent.Entities)
-local GridBase = require(script.Parent.GridBase)
-local GridHeap = require(script.Parent.GridHeap)
+local ObjectData = require(script.Parent.ObjectData)
 
 local DEFAULT_CELL_PART_SIZE_Y = 1
 
@@ -17,7 +20,7 @@ local FieldSolver = {
 }
 
 type StepWeight = (grid: GridBase, x: number, y: number, d: number) -> (number?, number?)
-type GridBase = GridBase.GridBase
+type GridBase = GridBase.GridBase 
 
 local function isDecimal(x: number): boolean
     return x % 1 ~= 0
@@ -222,7 +225,10 @@ end
 function FieldSolver.initObjects(grid: GridBase, profile: Entities.Profile?)
     grid:initializeBuffers()
 
-    for index, data in grid.objects do
+    for index, name in grid.objects do
+        local data = ObjectData[name] 
+        if data == nil then continue end 
+
         if data.Weight ~= nil then
             local weight = scaledWeight(grid:getWeight(index), profile, data.Category, data.Name)
             grid:setWeight(index, weight + data.Weight)
@@ -234,7 +240,10 @@ function FieldSolver.initObjects(grid: GridBase, profile: Entities.Profile?)
         end
     end
 
-    for index, data in grid.objects do
+    for index, name in grid.objects do
+        local data = ObjectData[name]
+        if data == nil then continue end 
+
         if data.GetObjectArea ~= nil then
             local objectArea = data.GetObjectArea(grid, index)
 

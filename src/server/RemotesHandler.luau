@@ -1,9 +1,10 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
-local Entities = require(ReplicatedStorage.Shared.Entities)
-local FieldSolver = require(ReplicatedStorage.Shared.FieldSolver)
-local GridBase = require(ReplicatedStorage.Shared.GridBase)
-local ObjectData = require(ReplicatedStorage.Shared.ObjectData)
+local Entities = require(ServerScriptService.Server.modules.Entities)
+local FieldSolver = require(ServerScriptService.Server.modules.FieldSolver)
+local GridBase = require(ServerScriptService.Server.modules.Grid.GridBase)
+local ObjectData = require(ServerScriptService.Server.modules.ObjectData)
 
 local remotes = ReplicatedStorage.Remotes :: Folder
 local requestPlaceableObjects = remotes.RequestPlaceableObjects :: RemoteFunction
@@ -40,8 +41,9 @@ function RemotesHandler.onPlaceObject(player: Player, gridCoords: Vector2, toPla
 
     local index = grid:index(gridCoords.X, gridCoords.Y)
 
-    grid:addObjectData(index, ObjectData[toPlace])
+    grid:addObject(index, toPlace)
     print(`Added {toPlace} at {gridCoords} | Index {index}`)
+
     FieldSolver.initObjects(grid, Entities.Profiles.Profile1)
 
     local t = os.clock()
@@ -52,6 +54,7 @@ function RemotesHandler.onPlaceObject(player: Player, gridCoords: Vector2, toPla
     local maxCost = FieldSolver.getMaxCost(grid)
     local fromW, toW = Color3.fromRGB(155, 155, 155), Color3.fromRGB(255, 0, 0)
     local fromC, toC = Color3.fromRGB(0, 255, 0), Color3.fromRGB(255, 0, 255)
+
     FieldSolver.createGradient(grid, maxCost, workspace.Map, fromC, toC, FieldSolver.GradientType.Cost)
 end
 

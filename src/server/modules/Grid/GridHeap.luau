@@ -1,14 +1,10 @@
 --!native
+local Types = require(script.Parent.Types)
+
 local GridHeap = {}
 GridHeap.__index = GridHeap
 
-type HeapData = {
-    cells: {number},
-    costs: {number},
-    size: number,
-}
-
-export type GridHeap = typeof(setmetatable({} :: HeapData, GridHeap))
+export type GridHeap = typeof(setmetatable({} :: Types.GridHeapData, GridHeap))
 
 function GridHeap.new(): GridHeap
     local self = {}

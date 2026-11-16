@@ -1,30 +1,15 @@
 --!native
+local Types = require(script.Parent.Types)
+
 local DEF_WEIGHT_INIT = 1
 local DEF_COST_INIT = math.huge
 
 local GridBase = {}
 GridBase.__index = GridBase
 
-export type GridBase = typeof(setmetatable({} :: {
-    width: number,
-    height: number,
-    weight: buffer,
-    cost: buffer,
-    objects: {[number]: ObjectData},
-}, GridBase))
-
-export type ObjectData = {
-    Name: string,
-    Category: string?,
-    Weight: number?,
-    Cost: number?,
-    GetObjectArea: ((grid: GridBase, i: number) -> ObjectArea)?
-}
-
-export type ObjectArea = {
-    Weights: {number}?,
-    Costs: {number}?
-}
+export type ObjectData = Types.ObjectData
+export type ObjectArea = Types.ObjectArea
+export type GridBase = typeof(setmetatable({} :: Types.GridData, GridBase))
 
 local function initializeBuffers(weight: buffer, cost: buffer, n: number, weight_init: number, cost_init: number)
     for i = 0, n - 1 do
@@ -93,22 +78,16 @@ function GridBase.setCost(self: GridBase, i: number, c: number)
     buffer.writef32(self.cost, i * 4, c)
 end
 
-function GridBase.addObjectData(self: GridBase, i: number, objectData: ObjectData, override: boolean): ObjectData?
-    if self.objects[i] ~= nil then
-        if not override then return end 
+function GridBase.addObject(self: GridBase, i: number, name: string, override: boolean): string?
+    local overridden = self.objects[i]
+    if overridden ~= nil and not override then return end 
 
-        local overridden = self.objects[i]
-        self.objects[i] = objectData
+    self.objects[i] = name
 
-        return overridden
-    end 
-
-    self.objects[i] = objectData
-    
-    return nil 
+    return overridden
 end 
 
-function GridBase.removeObjectDataAtIndex(self: GridBase, i: number): {}?
+function GridBase.removeObject(self: GridBase, i: number): string?
     if self.objects[i] == nil then return end 
 
     local removed = self.objects[i]
