@@ -2,6 +2,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local GridBase = require(ServerScriptService.Server.modules.Grid.GridBase)
 local GridHeap = require(ServerScriptService.Server.modules.Grid.GridHeap)
+local GridUtil = require(ServerScriptService.Server.modules.Grid.GridUtil)
 local Types = require(ServerScriptService.Server.modules.Grid.Types)
 local ObjectData = require(script.Parent.ObjectData)
 
@@ -55,7 +56,7 @@ local function scaledCost(c: number, profile: EntityProfile?, category: string?,
     return c / interest
 end
 
-function FieldSolver.newGridFromPart(base: BasePart, cellSize: Vector2): GridBase?
+function FieldSolver.newGridFromPart(base: Part, cellSize: Vector2): GridBase?
     local partW, partH = base.Size.X, base.Size.Z
     local gridSize = Vector2.new(partW, partH) / cellSize
 
@@ -69,15 +70,22 @@ function FieldSolver.newGridFromPart(base: BasePart, cellSize: Vector2): GridBas
     return GridBase.new(gridSize.X, gridSize.Y)
 end
 
-function FieldSolver.createGridParts(grid: GridBase, base: BasePart, cellSize: Vector2): (Vector3, CFrame)
+function FieldSolver.getMapCellAnchor(map: Model, cellSize: Vector2): CFrame
+    local base = map.PrimaryPart
     local baseSize = base.Size
     local baseCFrame = base.CFrame
-    local topLeft = baseCFrame * CFrame.new(
+    
+    return baseCFrame * CFrame.new(
         -baseSize.X * 0.5 + cellSize.X * 0.5,
-        baseSize.Y * 0.5 + DEFAULT_CELL_PART_SIZE_Y * 0.5,
+        baseSize.Y * 0.5,
         -baseSize.Z * 0.5 + cellSize.Y * 0.5
     )
+end
 
+function FieldSolver.createGridParts(grid: GridBase, map: Model, cellSize: Vector2)
+    local base = map.PrimaryPart
+    local anchor = FieldSolver.getMapCellAnchor(map, cellSize)
+    
     local cellPartSize = Vector3.new(cellSize.X, DEFAULT_CELL_PART_SIZE_Y, cellSize.Y)
 
     local folder = base:FindFirstChild("GridParts") :: Folder?
@@ -98,13 +106,57 @@ function FieldSolver.createGridParts(grid: GridBase, base: BasePart, cellSize: V
 			cell.TopSurface = Enum.SurfaceType.Smooth
             cell.Transparency = 0.25
             cell.Size = cellPartSize
-			cell.CFrame = topLeft * CFrame.new((x - 1) * cellSize.X, 0, (y - 1) * cellSize.Y)
+			cell.CFrame = GridUtil.pointToWorldCf(anchor, cellSize, Vector2.new(x, y)) *
+             CFrame.new(0, cellPartSize.Y * 0.5, 0)
             cell.Name = `Cell{index}`
             cell.Parent = folder
         end
     end
+end
 
-    return cellPartSize, topLeft
+function FieldSolver.forEachCell(grid: GridBase, cells: {number}?, callback: (i: number) -> ())
+    local all = cells == nil
+
+    if all then 
+        for i = 0, grid.width * grid.height - 1 do
+            callback(i)
+        end
+    else
+        local indices = cells :: {number}
+
+        for _, i in indices do
+            callback(i)
+        end
+
+        return
+    end
+end
+
+function FieldSolver.initWalls(grid: GridBase, map: Model, height: number)
+    local anchor = map:GetAttribute("CellPartAnchor") :: CFrame?
+    local cellSize = map:GetAttribute("CellSize")
+
+    if anchor == nil or cellSize == nil then
+        error("Map is missing attribute 'CellPartAnchor' or 'CellSize'")
+    end
+
+    local anchorY = anchor.Y
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Include
+    raycastParams:AddToFilter(map)
+
+    FieldSolver.forEachCell(grid, nil, function(i: number)
+        local target = GridUtil.pointToWorldCf(anchor, cellSize, grid:coordinates(i))
+        local raycastResult = GridUtil.castRayToGround(target, raycastParams)
+
+        if raycastResult == nil then return end 
+
+        local raycastY = raycastResult.Position.Y
+
+        if math.abs(raycastY - anchorY) > height then
+            grid:addObject(i, "Wall")
+        end
+    end)
 end
 
 function FieldSolver.setWeightRect(grid: GridBase, pos: Vector2, size: Vector2, w: number)
@@ -157,25 +209,6 @@ function FieldSolver.getMaxWeight(grid: GridBase): number
 	end
 
 	return max
-end
-
-
-function FieldSolver.forEachCell(grid: GridBase, cells: {number}?, callback: (i: number) -> ())
-    local all = cells == nil
-
-    if all then 
-        for i = 0, grid.width * grid.height - 1 do
-            callback(i)
-        end
-    else
-        local indices = cells :: {number}
-
-        for _, i in indices do
-            callback(i)
-        end
-
-        return
-    end
 end
 
 function FieldSolver.createGradient(

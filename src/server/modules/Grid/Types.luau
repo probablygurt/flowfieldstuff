@@ -47,6 +47,7 @@ export type ObjectArea = {
 
 export type EntityProfile = {
     Name: string,
+    Height: number,
     WeightMultiplier: {
         Category: {[string]: number},
         Targets: {[string]: number} -- Overrides category weight multis
@@ -61,6 +62,7 @@ export type EntityProfile = {
 export type PathfinderData = {
     grid: GridBase,
     map: Model,
+    raycastParams: RaycastParams,
 }
 
 export type Pathfinder = PathfinderData & {

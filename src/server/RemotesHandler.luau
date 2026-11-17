@@ -28,7 +28,7 @@ local function initPlaceableObjects()
 end
 
 local function solveMap(grid: GridBase)
-    FieldSolver.initObjects(grid, Entities.Profiles.Profile1)
+    FieldSolver.initObjects(grid, Entities.Profiles.Enemy)
     FieldSolver.computeCostsQueue(grid)
 
     local maxWeight = FieldSolver.getMaxWeight(grid)
@@ -84,7 +84,7 @@ function RemotesHandler.onTracePath(player: Player, gridCoords: Vector2)
     local path = FieldSolver.tracePath(grid, gridCoords)
 
     local pathfinder = Pathfinder.new(grid, workspace.Map)
-    pathfinder:getWaypoints()
+    pathfinder:getWaypoints(path)
 
     if not grid:isValid(gridCoords.X, gridCoords.Y) then return end 
 end
