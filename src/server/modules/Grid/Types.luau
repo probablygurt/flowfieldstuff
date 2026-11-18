@@ -45,8 +45,10 @@ export type ObjectArea = {
     Costs: {number}?
 }
 
-export type EntityProfile = {
+export type UnitProfile = {
     Name: string,
+    Health: number,
+
     Height: number,
     WeightMultiplier: {
         Category: {[string]: number},
@@ -58,6 +60,13 @@ export type EntityProfile = {
     }
 }
 
+export type UnitData = {
+    name: string,
+    position: Vector2,
+    health: number,
+    maxHealth: number,
+    targetIndex: number,
+}
 
 export type PathfinderData = {
     grid: GridBase,

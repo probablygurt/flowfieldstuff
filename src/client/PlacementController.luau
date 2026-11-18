@@ -25,24 +25,28 @@ PlacementController.MouseRaycastParams.FilterType = Enum.RaycastFilterType.Inclu
 PlacementController.MouseRaycastParams:AddToFilter(map)
 
 local topLeft: CFrame
-local cellPartSize: Vector3
+local cellSize: Vector2
 local gridSize: Vector2 = requestGridSize:InvokeServer()
 
 local function initializeMapTopLeft()
     local base = map.PrimaryPart
     local baseSize = base.Size
     local baseCFrame = base.CFrame
+
+    cellSize = map:GetAttribute("CellSize")
     
-    local gridParts = base:FindFirstChild("GridParts") :: Folder?
-    
-    if gridParts ~= nil then
-        local v = gridParts:GetChildren()[1] :: BasePart
-        cellPartSize = v.Size
+    if cellSize == nil then
+        local gridParts = base:FindFirstChild("GridParts") :: Folder?
+  
+        if gridParts ~= nil then
+            local v = gridParts:GetChildren()[1] :: BasePart
+            cellSize = Vector2.new(v.Size.X, v.Size.Z)
+        end
     end
     
     topLeft = baseCFrame * CFrame.new(
         -baseSize.X * 0.5,
-        baseSize.Y * 0.5 + cellPartSize.Y * 0.5,
+        baseSize.Y * 0.5,
         -baseSize.Z * 0.5
     )
 end
@@ -67,8 +71,8 @@ local function getLocalMousePosition(): Vector2
     workspace.MousePos.Position = mousePos
 
     local localPos = topLeft:PointToObjectSpace(mousePos)
-    local x = math.clamp(math.ceil(localPos.X / cellPartSize.X), 1, gridSize.X)
-    local y = math.clamp(math.ceil(localPos.Z / cellPartSize.Z), 1, gridSize.Y)
+    local x = math.clamp(math.ceil(localPos.X / cellSize.X), 1, gridSize.X)
+    local y = math.clamp(math.ceil(localPos.Z / cellSize.Y), 1, gridSize.Y)
 
     return Vector2.new(x, y)
 end

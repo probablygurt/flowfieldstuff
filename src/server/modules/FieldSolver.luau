@@ -22,13 +22,13 @@ local FieldSolver = {
 
 type StepWeight = (grid: GridBase, x: number, y: number, d: number) -> (number?, number?)
 type GridBase = Types.GridBase 
-type EntityProfile = Types.EntityProfile
+type UnitProfile = Types.UnitProfile
 
 local function isDecimal(x: number): boolean
     return x % 1 ~= 0
 end
 
-local function scaledWeight(w: number, profile: EntityProfile?, category: string?, target: string?): number
+local function scaledWeight(w: number, profile: UnitProfile?, category: string?, target: string?): number
     if w == math.huge or profile == nil then return w end
   
     local multi = 1
@@ -42,7 +42,7 @@ local function scaledWeight(w: number, profile: EntityProfile?, category: string
     return w * multi
 end
 
-local function scaledCost(c: number, profile: EntityProfile?, category: string?, target: string?): number
+local function scaledCost(c: number, profile: UnitProfile?, category: string?, target: string?): number
     if c == math.huge or profile == nil then return c end
 
     local interest = 1
@@ -119,16 +119,14 @@ function FieldSolver.forEachCell(grid: GridBase, cells: {number}?, callback: (i:
 
     if all then 
         for i = 0, grid.width * grid.height - 1 do
-            callback(i)
+            task.spawn(callback, i)
         end
     else
         local indices = cells :: {number}
 
         for _, i in indices do
-            callback(i)
+            task.spawn(callback, i)
         end
-
-        return
     end
 end
 
@@ -258,7 +256,7 @@ function FieldSolver.stepWeight(grid: GridBase, x: number, y: number, d: number)
     return ni, weight * DIR_COST[d]
 end
 
-function FieldSolver.initObjects(grid: GridBase, profile: EntityProfile?)
+function FieldSolver.initObjects(grid: GridBase, profile: UnitProfile?)
     grid:initializeBuffers()
 
     for index, name in grid.objects do
