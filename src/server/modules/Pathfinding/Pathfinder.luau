@@ -1,3 +1,4 @@
+local Debris = game:GetService("Debris")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Types = require(ServerScriptService.Server.modules.Grid.Types)
@@ -106,6 +107,16 @@ function Pathfinder.getWaypoints(self: Pathfinder, path: {number})
         end
 
         lastCross = currCross
+    end
+
+    print("oo shit")
+
+    for _, waypoint in waypoints do
+        local marker = workspace.WaypointMarker:Clone() :: BasePart
+        marker.CFrame = waypoint
+        marker.Anchored = true
+        marker.Parent = workspace
+        Debris:AddItem(marker, 5)
     end
 end
 

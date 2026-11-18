@@ -1,4 +1,4 @@
-local Players = game:GetService("Players")
+--[[local Players = game:GetService("Players")
 local RemotesHandler = require(script.RemotesHandler)
 local Units = require(script.modules.Units)
 local FieldSolver = require(script.modules.FieldSolver)
@@ -14,4 +14,4 @@ Players.PlayerAdded:Connect(function(player: Player)
     local enemyUnit = Units.newUnit("Enemy", Vector2.one)
 
     RemotesHandler.sendUnitData(enemyUnit)
-end)
+end)--]]

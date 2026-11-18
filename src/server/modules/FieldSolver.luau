@@ -60,10 +60,7 @@ function FieldSolver.newGridFromPart(base: Part, cellSize: Vector2): GridBase?
     local partW, partH = base.Size.X, base.Size.Z
     local gridSize = Vector2.new(partW, partH) / cellSize
 
-    print(`GridSize: {gridSize}`)
-
     if isDecimal(gridSize.X) or isDecimal(gridSize.Y) then
-        warn(`Grid size is not a whole number vector. Change the size of your base part or cell size. Grid size: ({gridSize})`)
         return 
     end
 

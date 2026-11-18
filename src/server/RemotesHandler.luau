@@ -1,4 +1,3 @@
-local FileManagerService = game:GetService("FileManagerService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -22,6 +21,7 @@ local RemotesHandler = {
 
 type GridBase = Types.GridBase
 type UnitData = Types.UnitData
+type Pathfinder = Types.Pathfinder
 
 local function initPlaceableObjects()
     for name, _ in ObjectData do
@@ -41,12 +41,10 @@ local function solveMap(grid: GridBase)
     FieldSolver.createGradient(grid, maxCost, workspace.Map, fromC, toC, FieldSolver.GradientType.Cost)--]]
 end
 
-local function forEachPathfinderGrid(callback: (profileName: string, grid: GridBase) -> ())
-    print(Units)
-    
-    for profileName, pathfinder in Units.Pathfinders do
+local function forEachPathfinder(callback: (profileName: string, pathfinder: Pathfinder, grid: GridBase) -> ())
+    for profileName, pathfinder: Pathfinder in Units.Pathfinders do
         local grid = pathfinder.grid
-        callback(profileName, grid)
+        callback(profileName, pathfinder, grid)
     end
 end
 
@@ -59,7 +57,7 @@ function RemotesHandler.onRequestGridSize(player: Player): Vector2?
 end
 
 function RemotesHandler.onPlaceObject(player: Player, gridCoords: Vector2, toPlace: string)
-    forEachPathfinderGrid(function(profileName, grid)
+    forEachPathfinder(function(profileName, pathfinder, grid)
         if not grid:isValid(gridCoords.X, gridCoords.Y) then return end 
         if table.find(RemotesHandler.PlaceableObjects, toPlace) == nil then return end
 
@@ -73,7 +71,7 @@ function RemotesHandler.onPlaceObject(player: Player, gridCoords: Vector2, toPla
 end
 
 function RemotesHandler.onDestroyObject(player: Player, gridCoords: Vector2)
-    forEachPathfinderGrid(function(profileName: string, grid)
+    forEachPathfinder(function(profileName: string, pathfinder, grid)
         if not grid:isValid(gridCoords.X, gridCoords.Y) then return end
 
         local index = grid:index(gridCoords.X, gridCoords.Y)
@@ -88,9 +86,11 @@ function RemotesHandler.onDestroyObject(player: Player, gridCoords: Vector2)
 end
 
 function RemotesHandler.onTracePath(player: Player, gridCoords: Vector2)
-    forEachPathfinderGrid(function(profileName: string, grid)
+    forEachPathfinder(function(profileName: string, pathfinder, grid)
         if not grid:isValid(gridCoords.X, gridCoords.Y) then return end 
-        FieldSolver.tracePath(grid, gridCoords)
+        local path = FieldSolver.tracePath(grid, gridCoords)
+
+        pathfinder:getWaypoints(path)
     end)
 end
 
