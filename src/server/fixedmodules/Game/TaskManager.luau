@@ -12,12 +12,17 @@ type TaskManager = {
     StartTime: number?,
     Tick: number,
     OnTick: Types.Signal,
-    PostTicks: Types.Signal
+    PostTicks: Types.Signal,
+
+    init: () -> (),
+    start: () -> (),
+    delay: (amount: number, fn: () -> () | thread, ...any) -> (),
+    wait: (amount: number) -> (any)
 }
 
 local TaskLink = {}
 
-function TaskLink.new(fn: () -> (), fromLink, args): TaskLink
+function TaskLink.new(fn: () -> () | thread, fromLink, args): TaskLink
     local link = {
         task = fn,
         previous = fromLink,
@@ -43,7 +48,7 @@ function TaskList.new(): TaskList
     return setmetatable(self, TaskList)
 end
 
-function TaskList.add(self, fn: () -> (), ...)
+function TaskList.add(self, fn: () -> () | thread, ...)
     local newHead = TaskLink.new(fn, self.head, ...)
     self.head = newHead
 
@@ -98,7 +103,7 @@ function TaskManager.start()
     startHeartbeat(workspace:GetServerTimeNow())
 end
 
-function TaskManager:delay(amount: number, fn: () -> (), ...)
+function TaskManager:delay(amount: number, fn: () -> () | thread, ...)
     local targetTick = TaskManager.Tick + math.max(amount, 1)
 
     local taskList = tasks[targetTick]

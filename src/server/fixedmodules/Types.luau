@@ -11,14 +11,15 @@ export type Signal = {
 }
 
 export type TaskLink = {
-    task: () -> (),
+    task: () -> () | thread,
+    args: any,
     previous: TaskLink?,
-    next: TaskLink?
+    next: TaskLink?,
 }
 
 export type TaskList = {
     head: TaskLink?,
-    add: (self: TaskList, fn: () -> ()) -> ()
+    add: (self: TaskList, fn: () -> () | thread) -> ()
 }
 
 export type GridHeapData = {
