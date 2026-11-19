@@ -31,7 +31,7 @@ local function seedCost(objectProfile: ObjectProfile, unitProfile: UnitProfile?)
     if unitProfile == nil then return baseCost end
 
     local s = unitProfile.SeedCost
-    return (s.Targets[unitProfile.Name] or s.Category[unitProfile] or baseCost) * COST_SCALE
+    return (s.Targets[objectProfile.Name] or s.Category[objectProfile.Category] or baseCost) * COST_SCALE
 end
 
 @native
