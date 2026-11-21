@@ -39,7 +39,8 @@ end
 function DijkstraSolver.initObjects(grid: Grid, unitProfile: UnitProfile?)
     grid:initializeBuffers()
 
-    for i, name in grid.objects do
+    for p, name in grid.objects do
+        local i = p - 1
         local objectProfile = ObjectProfiles[name] 
         if objectProfile == nil then continue end 
 
@@ -53,12 +54,13 @@ function DijkstraSolver.initObjects(grid: Grid, unitProfile: UnitProfile?)
         end
     end
 
-    for index, name in grid.objects do
+    for p, name in grid.objects do
+        local i = p - 1
         local objectProfile = ObjectProfiles[name]
         if objectProfile == nil then continue end 
 
         if objectProfile.GetObjectArea ~= nil then
-            local objectArea = objectProfile.GetObjectArea(grid, index)
+            local objectArea = objectProfile.GetObjectArea(grid, i)
 
             if objectArea.Weights ~= nil then
                 for i, w in objectArea.Weights do

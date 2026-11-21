@@ -92,7 +92,7 @@ function Unit.new(profileName, spawnPos: Vector2): Unit?
         self:step()
         self.position = GridBuilder.worldCfToPoint(anchor, GridManager.CellSize, self.cframe)
 
-        workspace.Enemy:PivotTo(self.cframe)
+        --workspace.Enemy:PivotTo(self.cframe)
     end)
 
     self.gridSolvedConnection = UnitManager.gridSolved:Connect(function(name: string)
@@ -143,8 +143,6 @@ function UnitClass.step(self: Unit)
     end
 
     self.cframe = currCFrame
-
-    print(currWaypoint.Position, nextWaypoint.Position, currCFrame.Position)
 end
 
 function UnitClass.destroy(self: Unit)

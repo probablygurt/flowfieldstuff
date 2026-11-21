@@ -56,7 +56,8 @@ export type Grid = GridData & {
 
     addObject: (self: Grid, i: number, name: string, override: boolean?) -> (boolean),
     removeObject: (self: Grid, i: number) -> (string?),
-
+    getObject: (self: Grid, i: number) -> (string?),
+    
     forEachCell: (self: Grid, cells: {number}?, callback: (i: number) -> ()) -> (),
 }
 

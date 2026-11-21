@@ -89,10 +89,10 @@ end
 
 @native
 function Grid.addObject(self: Grid, i: number, name: string, override: boolean): boolean?
-    local overridden = self.objects[i]
+    local overridden = self.objects[i + 1]
     if overridden ~= nil and not override then return false end 
 
-    self.objects[i] = name
+    self.objects[i + 1] = name
     self.objectAdded:Fire(i, name)
 
     return true
@@ -100,12 +100,17 @@ end
 
 @native
 function Grid.removeObject(self: Grid, i: number): string?
-    if self.objects[i] == nil then return end 
+    if self.objects[i + 1] == nil then return end 
 
-    local removed = self.objects[i]
-    self.objects[i] = nil
+    local removed = self.objects[i + 1]
+    self.objects[i + 1] = nil
     
     return removed
+end
+
+@native
+function Grid.getObject(self: Grid, i: number): string?
+    return self.objects[i + 1]
 end
 
 function Grid.forEachCell(self: Grid, cells: {number}?, callback: (i: number) -> ())
