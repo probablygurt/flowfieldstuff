@@ -12,7 +12,7 @@ local UnitProfiles = require(script.Parent.UnitProfiles)
 type Unit = Types.Unit
 type Pathfinder = Types.Pathfinder
 
-local UNIT_STEP = 0.05
+local UNIT_STEP = 0.1
 
 local Unit = {}
 local UnitClass = {}
@@ -99,10 +99,15 @@ function Unit.new(profileName, spawnPos: Vector2): Unit?
         if name ~= profileName then return end 
 
         local path = DijkstraSolver.tracePath(grid, self.position)
+        local newWaypoints = pathfinder:getWaypoints(path)
+
         self.waypoints = {self.cframe}
 
-        for _, wp in pathfinder:getWaypoints(path) do
-            table.insert(self.waypoints, wp)
+        for i = 1, #newWaypoints do
+            -- we dont need to add first new waypoint if it's the same as self.cframe
+            -- this'll cause issues with the step function
+            if i == 1 and newWaypoints[i].Position == self.cframe.Position then continue end 
+            table.insert(self.waypoints, newWaypoints[i])
         end
 
         self.waypointIndex = 1
@@ -138,6 +143,8 @@ function UnitClass.step(self: Unit)
     end
 
     self.cframe = currCFrame
+
+    print(currWaypoint.Position, nextWaypoint.Position, currCFrame.Position)
 end
 
 function UnitClass.destroy(self: Unit)

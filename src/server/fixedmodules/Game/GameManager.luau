@@ -1,10 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local GridBuilder = require(ServerScriptService.Server.fixedmodules.Grid.GridBuilder)
 local TaskManager = require(ReplicatedStorage.Shared.TaskManager)
 local GridManager = require(ServerScriptService.Server.fixedmodules.Grid.GridManager)
-local DijkstraSolver = require(ServerScriptService.Server.fixedmodules.Pathfinding.DijkstraSolver)
 local Unit = require(ServerScriptService.Server.fixedmodules.Units.Unit)
 local UnitManager = require(ServerScriptService.Server.fixedmodules.Units.UnitManager)
 
@@ -19,7 +17,7 @@ local function randomPos(): Vector2
 end
 
 function GameManager.start()
-    TaskManager:delay(10, function()
+    TaskManager:delay(90, function()
         local grid = UnitManager.Pathfinders["Enemy"].grid
 
         local corePos = Vector2.one--randomPos()
@@ -53,7 +51,7 @@ function GameManager.start()
         end
     end)
 
-    TaskManager:delay(50, function()
+    TaskManager:delay(130, function()
         local grid = UnitManager.Pathfinders["Enemy"].grid
 
         local towerPos = Vector2.new(25, 25)
@@ -62,7 +60,7 @@ function GameManager.start()
         task.defer(GridManager.displayGradient, grid, Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0), nil, 0)
         TaskManager:wait(10)
 
-        for i = 1, 10 do
+        for i = 1, 20 do
             local rand = randomPos()
 
             repeat
@@ -72,7 +70,7 @@ function GameManager.start()
             UnitManager.addObject(nil, grid:index(rand.X, rand.Y), "Tower")
 
             task.defer(GridManager.displayGradient, grid, Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0), nil, 0)
-            TaskManager:wait(60)
+            TaskManager:wait(15)
         end
     end)
 end

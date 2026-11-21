@@ -2,7 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TaskManager = require(ReplicatedStorage.Shared.TaskManager)
 local Types = require(ReplicatedStorage.Shared.Types)
 
-local UNIT_STEP = 0.05
+local UNIT_STEP = 0.1
 
 type RenderState = Types.RenderState
 
