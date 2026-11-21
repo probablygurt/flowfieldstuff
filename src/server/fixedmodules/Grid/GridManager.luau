@@ -23,7 +23,7 @@ local GridManager = {} :: GridManager
 
 function GridManager.init()
     GridManager.Map = workspace.Map
-    GridManager.CellSize = Vector2.new(2, 2)
+    GridManager.CellSize = Vector2.new(1, 1)
     GridManager.GradientType = {
         Cost = 1,
         Weight = 0
