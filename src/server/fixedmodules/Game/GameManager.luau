@@ -37,7 +37,7 @@ function GameManager.start()
         UnitManager.solveGrids()
         GridManager.displayGradient(grid,Color3.fromRGB(255, 255, 255), Color3.fromRGB())
 
-        TaskManager:wait(100)
+        TaskManager:wait(10)
 
         for i = 1, 1 do  
             local rand = randomPos()
@@ -53,14 +53,14 @@ function GameManager.start()
         end
     end)
 
-    --[[TaskManager:delay(120, function()
+    TaskManager:delay(50, function()
         local grid = UnitManager.Pathfinders["Enemy"].grid
 
-        --[[local towerPos = Vector2.new(35, 35)
+        local towerPos = Vector2.new(25, 25)
         UnitManager.addObject(nil, grid:index(towerPos.X, towerPos.Y), "Tower")
 
         task.defer(GridManager.displayGradient, grid, Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0), nil, 0)
-        TaskManager:wait(120)
+        TaskManager:wait(10)
 
         for i = 1, 10 do
             local rand = randomPos()
@@ -72,9 +72,9 @@ function GameManager.start()
             UnitManager.addObject(nil, grid:index(rand.X, rand.Y), "Tower")
 
             task.defer(GridManager.displayGradient, grid, Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0), nil, 0)
-            TaskManager:wait(15)
+            TaskManager:wait(60)
         end
-    end)--]]
+    end)
 end
 
 

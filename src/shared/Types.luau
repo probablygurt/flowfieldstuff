@@ -121,5 +121,14 @@ export type Pathfinder = PathfinderData & {
     getWaypoints: (self: Pathfinder, path: {number}) -> ({CFrame}),
 }
 
+export type RenderState = {
+    model: Model,
+    speed: number,
+    waypoints: {CFrame},
+    unitIndex: number,
+    waypointIndex: number,
+    lastTick: number,
+    connection: Connection
+}
 
 return {}

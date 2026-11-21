@@ -4,7 +4,7 @@ local RunService = game:GetService("RunService")
 local Signal = require(script.Parent.Signal)
 local Types = require(script.Parent.Types)
 
-local TICKS_PER_SECOND = 30
+local TICKS_PER_SECOND = 5
 
 type TaskLink = Types.TaskLink
 type TaskList = Types.TaskList

@@ -20,14 +20,11 @@ UnitClass.__index = UnitClass
 
 local remotes = ReplicatedStorage.Remotes :: Folder
 local renderUnit = remotes.RenderUnit :: RemoteEvent
-local renderFinished = remotes.RenderFinished :: RemoteEvent
 local updateWaypoints = remotes.UpdateWaypoints :: RemoteEvent
 
 local unitModelsFolder = ReplicatedStorage.Units :: Folder
 local unitModels: {[string]: Model} = {}
 local units: {Unit} = {}
-local finishedRenders = {}
-local finishedRenderCount = 0
 local finishedUnits = {}
 
 local totalUnits = 0
