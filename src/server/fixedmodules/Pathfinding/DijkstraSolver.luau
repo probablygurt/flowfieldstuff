@@ -63,9 +63,9 @@ function DijkstraSolver.initObjects(grid: Grid, unitProfile: UnitProfile?)
             local objectArea = objectProfile.GetObjectArea(grid, i)
 
             if objectArea.Weights ~= nil then
-                for i, w in objectArea.Weights do
+                for j, w in objectArea.Weights do
                     local added = scaledWeight(w, objectProfile, unitProfile)
-                    grid:setWeight(i, grid:getWeight(i) + added)
+                    grid:setWeight(j, grid:getWeight(j) + added)
                 end
             end
 

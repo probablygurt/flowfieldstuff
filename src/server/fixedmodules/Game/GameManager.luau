@@ -20,7 +20,7 @@ function GameManager.start()
     TaskManager:delay(120, function()
         local grid = UnitManager.Pathfinders["Enemy"].grid
 
-        local corePos = Vector2.one--randomPos()
+        local corePos = randomPos()--Vector2.one--randomPos()
         UnitManager.addObject(nil, grid:index(corePos.X, corePos.Y), "Core")
 
         --[[for i = 1, 20 do
@@ -37,7 +37,7 @@ function GameManager.start()
 
         TaskManager:wait(10)
 
-        for i = 1, 1 do  
+        for i = 1, 200 do  
             local rand = randomPos()
 
             repeat
@@ -58,7 +58,7 @@ function GameManager.start()
         local towerPos = Vector2.new(35, 25)
         UnitManager.addObject(nil, grid:index(towerPos.X, towerPos.Y), "Tower")
 
-        task.defer(GridManager.displayGradient, grid, Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0), nil, 0)
+        --task.defer(GridManager.displayGradient, grid, Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0), nil, 0)
         TaskManager:wait(10)
 
         for i = 1, 10 do
@@ -70,8 +70,8 @@ function GameManager.start()
             
             UnitManager.addObject(nil, grid:index(rand.X, rand.Y), "Tower")
 
-            task.defer(GridManager.displayGradient, grid, Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0), nil, 0)
-            TaskManager:wait(15)
+            task.defer(GridManager.displayGradient, grid, Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0), nil, 0.05)
+            TaskManager:wait(60)
         end
     end)
 end

@@ -124,13 +124,13 @@ function Pathfinder.getWaypoints(self: Pathfinder, path: {number}): {CFrame}
         end
     end
 
-    for _, waypoint in waypoints do
+    --[[for _, waypoint in waypoints do
         local marker = workspace.WaypointMarker:Clone() :: BasePart
         marker.CFrame = waypoint
         marker.Anchored = true
         marker.Parent = workspace
         task.delay(2, marker.Destroy, marker)
-    end
+    end--]]
 
     return waypoints
 end

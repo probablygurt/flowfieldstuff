@@ -82,7 +82,7 @@ function GridBuilder.createGridParts(map: Model, grid: Grid, cellSize: Vector2)
             cell.Anchored, cell.CanCollide = true, false
             cell.CanTouch, cell.CanQuery = false, false
 			cell.TopSurface = Enum.SurfaceType.Smooth
-            cell.Transparency = 0.25
+            cell.Transparency = 0
             cell.Size = cellPartSize
 			cell.CFrame = GridBuilder.pointToWorldCf(anchor, cellSize, Vector2.new(x, y)) *
              CFrame.new(0, cellPartSize.Y * 0.5, 0)
