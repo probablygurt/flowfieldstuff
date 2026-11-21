@@ -81,7 +81,7 @@ local function heartbeat(deltaTime: number)
         local link = taskList.head
 
         while link ~= nil do
-            task.spawn(link.task, TaskManager.Tick, table.unpack(link.args))
+            task.spawn(link.task, table.unpack(link.args))
             link = link.previous
         end
     end

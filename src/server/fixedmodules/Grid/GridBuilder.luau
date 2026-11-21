@@ -45,6 +45,12 @@ function GridBuilder.pointToWorldCf(anchor: CFrame, cellSize: Vector2, pos: Vect
     return anchor * CFrame.new((pos.X - 1) * cellSize.X, 0, (pos.Y - 1) * cellSize.Y)
 end
 
+function GridBuilder.worldCfToPoint(anchor: CFrame, cellSize: Vector2, cf: CFrame)
+    local cell = anchor:PointToObjectSpace(cf.Position)
+    
+    return Vector2.new(cell.X // cellSize.X + 1, cell.Z // cellSize.Y + 1)
+end
+
 function GridBuilder.castRayToGround(target: CFrame, raycastParams: RaycastParams, height: number?): RaycastResult?
     local rayLength = height or DEFAULT_RAY_LENGTH
     

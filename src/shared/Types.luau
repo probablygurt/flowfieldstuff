@@ -39,6 +39,8 @@ export type GridData = {
     weight: buffer,
     cost: buffer,
     objects: {[number]: string},
+
+    objectAdded: Signal,
 }
 
 export type Grid = GridData & {
@@ -52,7 +54,7 @@ export type Grid = GridData & {
     getCost: (self: Grid, i: number) -> (number),
     setCost: (self: Grid, i: number, c: number) -> (),
 
-    addObject: (self: Grid, i: number, name: string, override: boolean?) -> (string?),
+    addObject: (self: Grid, i: number, name: string, override: boolean?) -> (boolean),
     removeObject: (self: Grid, i: number) -> (string?),
 
     forEachCell: (self: Grid, cells: {number}?, callback: (i: number) -> ()) -> (),
@@ -100,7 +102,8 @@ export type UnitData = {
     waypointIndex: number,
     unitIndex: number,
 
-    onTickConnection: Connection
+    onTickConnection: Connection,
+    gridSolvedConnection: Connection
 }
 
 export type Unit = UnitData & {

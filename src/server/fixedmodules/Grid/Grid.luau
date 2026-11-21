@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Signal = require(ReplicatedStorage.Shared.Signal)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 local DEF_WEIGHT_INIT = 1
@@ -30,6 +31,7 @@ function Grid.new(width: number, height: number,
     self.weight = buffer.create(n * 4)
     self.cost = buffer.create(n * 4)
     self.objects = {}
+    self.objectAdded = Signal.new()
 
     initializeBuffers(self.weight, self.cost, n, wi, ci)
 
@@ -86,13 +88,14 @@ function Grid.setCost(self: Grid, i: number, c: number)
 end
 
 @native
-function Grid.addObject(self: Grid, i: number, name: string, override: boolean): string?
+function Grid.addObject(self: Grid, i: number, name: string, override: boolean): boolean?
     local overridden = self.objects[i]
-    if overridden ~= nil and not override then return end 
+    if overridden ~= nil and not override then return false end 
 
     self.objects[i] = name
+    self.objectAdded:Fire(i, name)
 
-    return overridden
+    return true
 end 
 
 @native

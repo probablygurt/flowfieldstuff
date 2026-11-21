@@ -2,6 +2,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TaskManager = require(ReplicatedStorage.Shared.TaskManager)
 local Types = require(ReplicatedStorage.Shared.Types)
 
+local UNIT_STEP = 0.1
+
 local UnitRender = {}
 
 local remotes = ReplicatedStorage.Remotes :: Folder
@@ -34,18 +36,13 @@ local function getUnitModel(name): Model?
     return unitModels[name]
 end
 
-local function step()
-
-end
-
-local UNIT_STEP = 0.1
-
 local function makeUnitModel(name: string, unitIndex: number, waypoints: {CFrame}, startTick: number)
     local unitModel = getUnitModel(name)
     if unitModel == nil then return end 
 
     local unitModelClone = unitModel:Clone()
     unitModelClone:PivotTo(waypoints[1])
+    unitModelClone.Name = tostring(unitIndex)
     unitModelClone.Parent = unitsFolder
 
     --print(`Client Tick: {TaskManager.Tick} | Server Creation Tick: {startTick}`)

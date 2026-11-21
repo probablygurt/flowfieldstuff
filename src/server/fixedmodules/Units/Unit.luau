@@ -1,6 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local GridBuilder = require(ServerScriptService.Server.fixedmodules.Grid.GridBuilder)
+local GridManager = require(ServerScriptService.Server.fixedmodules.Grid.GridManager)
 local TaskManager = require(ReplicatedStorage.Shared.TaskManager)
 local Types = require(ReplicatedStorage.Shared.Types)
 local UnitManager = require(script.Parent.UnitManager)
@@ -86,40 +88,28 @@ function Unit.new(profileName, spawnPos: Vector2): Unit?
     totalUnits += 1
     self.targetIndex = totalUnits 
 
+    local anchor = GridBuilder.getMapCellAnchor(GridManager.Map, GridManager.CellSize)
+
     self.onTickConnection = TaskManager.OnTick:Connect(function()
         self:step()
+        self.position = GridBuilder.worldCfToPoint(anchor, GridManager.CellSize, self.cframe)
+
+        workspace.Enemy:PivotTo(self.cframe)
+    end)
+
+    self.gridSolvedConnection = UnitManager.gridSolved:Connect(function(name: string)
+        if name ~= profileName then return end 
+
+        local path = DijkstraSolver.tracePath(grid, self.position)
+        self.waypoints = pathfinder:getWaypoints(path)
+
+        self.waypointIndex = 1
     end)
 
     renderUnit:FireAllClients(profileName, self.targetIndex, self.waypoints, TaskManager.Tick)
 
     return setmetatable(self, UnitClass)
 end
-
-local function checkMismatch(unitIndex: number)
-    local cntBefore = finishedUnits[unitIndex]
-    for _, list in finishedRenders do
-        if cntBefore ~= list[unitIndex] then return true end
-        cntBefore = list[unitIndex]
-    end
-
-    return false
-end
-
-renderFinished.OnServerEvent:Connect(function(a0: Player, unitIndex: number, tickFinished: number)
-	if finishedRenders[a0] == nil then finishedRenders[a0] = {} end
-	
-	finishedRenders[a0][unitIndex] = tickFinished
-	
-    local i = 0
-    local min = finishedRenderCount
-	for _, list in finishedRenders do
-        if i == 0 then
-            min = #list
-        end
-
-		finishedRenderCount = math.min(#list, min)
-	end
-end)
 
 function UnitClass.step(self: Unit)
     local waypoints = self.waypoints 
@@ -157,6 +147,7 @@ function UnitClass.destroy(self: Unit)
     end
 
     self.onTickConnection:Disconnect()
+    self.gridSolvedConnection:Disconnect()
     units[last] = nil
     setmetatable(self, nil)
 end
@@ -165,12 +156,38 @@ function Unit.init()
     preloadUnitModels()
 end
 
+local function checkMismatch(unitIndex: number)
+    local cntBefore = finishedUnits[unitIndex]
+    for _, list in finishedRenders do
+        if cntBefore ~= list[unitIndex] then return true end
+        cntBefore = list[unitIndex]
+    end
+
+    return false
+end
+
+renderFinished.OnServerEvent:Connect(function(a0: Player, unitIndex: number, tickFinished: number)
+	if finishedRenders[a0] == nil then finishedRenders[a0] = {} end
+	
+	finishedRenders[a0][unitIndex] = tickFinished
+	
+    local i = 0
+    local min = finishedRenderCount
+	for _, list in finishedRenders do
+        if i == 0 then
+            min = #list
+        end
+
+		finishedRenderCount = math.min(#list, min)
+	end
+end)
+
 function Unit.start()
     local c
     c = TaskManager.PostTicks:Connect(function()
-        if #finishedUnits < 100 then return end
+        if #finishedUnits < 0 then return end
         print(#finishedUnits, finishedRenderCount)
-        if #finishedUnits < 2000 or finishedRenderCount < 2000 then return end 
+        if #finishedUnits < 1 or finishedRenderCount < 1 then return end 
 
         local mismatches = 0
 

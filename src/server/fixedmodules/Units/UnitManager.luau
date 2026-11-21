@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local Signal = require(ReplicatedStorage.Shared.Signal)
 local Types = require(ReplicatedStorage.Shared.Types)
 local UnitProfiles = require(script.Parent.UnitProfiles)
 local GridBuilder = require(ServerScriptService.Server.fixedmodules.Grid.GridBuilder)
@@ -8,10 +9,20 @@ local GridManager = require(ServerScriptService.Server.fixedmodules.Grid.GridMan
 local DijkstraSolver = require(ServerScriptService.Server.fixedmodules.Pathfinding.DijkstraSolver)
 local Pathfinder = require(ServerScriptService.Server.fixedmodules.Pathfinding.Pathfinder)
 
+type Signal = Types.Signal
 type UnitProfile = Types.UnitProfile
 type Pathfinder = Types.Pathfinder
 type UnitManager = {
-    Pathfinders: {Pathfinder}
+    Pathfinders: {Pathfinder},
+
+    init: () -> (),
+    start: () -> (),
+    addObject: (profiles: {}?, i: number, name: string) -> (),
+    removeObject: (profiles: {}?, i: number) -> (),
+    getObject: (profiles: {}?, i: number) -> ({[string]: string}),
+    solveGrids: (profiles: {string}?) -> (),
+
+    gridSolved: Signal,
 }
 
 local UnitManager = {} :: UnitManager
@@ -76,6 +87,7 @@ function UnitManager.init()
     end
 
     UnitManager.UnitsFolder = unitsFolder
+    UnitManager.gridSolved = Signal.new()
 end
 
 function UnitManager.start()
@@ -91,6 +103,16 @@ function UnitManager.start()
     
         UnitManager.Pathfinders[name] = pathfinder
     end
+
+    forEachPathfinder(nil, function(name: string, pathfinder: Pathfinder)
+        local grid = pathfinder.grid
+
+        grid.objectAdded:Connect(function()
+            UnitManager.solveGrids({name})
+            
+            --GridManager.displayGradient(grid, Color3.fromRGB(255, 255, 255), Color3.fromRGB())
+        end)
+    end)
 end
 
 function UnitManager.addObject(profiles: {string}?, i: number, name: string)
@@ -124,6 +146,8 @@ function UnitManager.solveGrids(profiles: {string}?)
 
         DijkstraSolver.initObjects(grid, UnitProfiles[name])
         DijkstraSolver.computeCostsQueue(grid)
+
+        UnitManager.gridSolved:Fire(name)
     end)
 end
 

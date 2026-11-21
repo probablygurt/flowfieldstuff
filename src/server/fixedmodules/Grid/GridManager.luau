@@ -23,7 +23,7 @@ local GridManager = {} :: GridManager
 
 function GridManager.init()
     GridManager.Map = workspace.Map
-    GridManager.CellSize = Vector2.new(1, 1)
+    GridManager.CellSize = Vector2.new(2, 2)
     GridManager.GradientType = {
         Cost = 1,
         Weight = 0
@@ -52,9 +52,9 @@ function GridManager.getMaxWeight(grid: Grid): number
 	return max
 end
 
-function GridManager.displayGradient(grid: Grid, c0: Color3, c1: Color3, gradientType: number?)
+function GridManager.displayGradient(grid: Grid, c0: Color3, c1: Color3, gradientType: number?, waitTime: number?)
     gradientType = gradientType or GridManager.GradientType.Cost
-
+    
     local n = grid.width * grid.height
     local base = GridManager.Map.PrimaryPart
     local gridParts = base:FindFirstChild("GridParts") :: Folder?
@@ -78,6 +78,10 @@ function GridManager.displayGradient(grid: Grid, c0: Color3, c1: Color3, gradien
         end
 
         part.Color = c0:Lerp(c1, alpha)
+
+        if waitTime ~= nil and i % 100 == 0 then
+            task.wait(waitTime)
+        end
     end
 end
 
