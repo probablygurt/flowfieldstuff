@@ -1,6 +1,6 @@
-local ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Types = require(ServerScriptService.Server.fixedmodules.Types)
+local Types = require(ReplicatedStorage.Shared.Types)
 
 local DEF_WEIGHT_INIT = 1
 local DEF_COST_INIT = math.huge

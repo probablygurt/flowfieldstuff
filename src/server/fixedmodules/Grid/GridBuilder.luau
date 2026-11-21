@@ -1,6 +1,7 @@
-local ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Types = require(ReplicatedStorage.Shared.Types)
 local Grid = require(script.Parent.Grid)
-local Types = require(ServerScriptService.Server.fixedmodules.Types)
 
 local DEFAULT_CELL_PART_SIZE_Y = 1
 local DEFAULT_RAY_LENGTH = 1000

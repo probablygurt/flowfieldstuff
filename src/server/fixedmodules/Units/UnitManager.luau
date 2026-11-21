@@ -1,17 +1,18 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local Types = require(ReplicatedStorage.Shared.Types)
 local UnitProfiles = require(script.Parent.UnitProfiles)
 local GridBuilder = require(ServerScriptService.Server.fixedmodules.Grid.GridBuilder)
 local GridManager = require(ServerScriptService.Server.fixedmodules.Grid.GridManager)
 local DijkstraSolver = require(ServerScriptService.Server.fixedmodules.Pathfinding.DijkstraSolver)
 local Pathfinder = require(ServerScriptService.Server.fixedmodules.Pathfinding.Pathfinder)
-local Types = require(ServerScriptService.Server.fixedmodules.Types)
 
-type UnitManager = {
-    Pathfinders: {}
-}
 type UnitProfile = Types.UnitProfile
 type Pathfinder = Types.Pathfinder
+type UnitManager = {
+    Pathfinders: {Pathfinder}
+}
 
 local UnitManager = {} :: UnitManager
 local madeGridParts = false
@@ -66,10 +67,18 @@ end
 
 function UnitManager.init()
     UnitManager.Pathfinders = {}
+
+    local unitsFolder = workspace:FindFirstChild("Units")
+    if unitsFolder == nil then
+        unitsFolder = Instance.new("Folder")
+        unitsFolder.Name = "Units"
+        unitsFolder.Parent = workspace
+    end
+
+    UnitManager.UnitsFolder = unitsFolder
 end
 
 function UnitManager.start()
-    -- make a pathfinder for every profile
     if UnitManager.Pathfinders == nil then return end 
     if GridManager.Map == nil then return end
 
@@ -113,7 +122,7 @@ function UnitManager.solveGrids(profiles: {string}?)
     forEachPathfinder(profiles, function(name: string, pathfinder)
         local grid = pathfinder.grid
 
-        DijkstraSolver.initObjects(grid)
+        DijkstraSolver.initObjects(grid, UnitProfiles[name])
         DijkstraSolver.computeCostsQueue(grid)
     end)
 end

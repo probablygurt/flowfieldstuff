@@ -1,7 +1,8 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local Types = require(ServerScriptService.Server.fixedmodules.Types)
-local GridQuery = require(ServerScriptService.Server.modules.Grid.GridQuery)
+local GridQuery = require(ServerScriptService.Server.fixedmodules.Grid.GridQuery)
+local Types = require(ReplicatedStorage.Shared.Types)
 
 local ObjectProfiles = {
     Core = {

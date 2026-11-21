@@ -1,11 +1,11 @@
-local ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Types = require(ServerScriptService.Server.fixedmodules.Types)
+local Types = require(ReplicatedStorage.Shared.Types)
 
 local UnitProfiles = {
     Enemy = {
         Health = 0,
-
+        Speed = 5,
         Height = 0,
         WeightMultiplier = {
             Category = {},

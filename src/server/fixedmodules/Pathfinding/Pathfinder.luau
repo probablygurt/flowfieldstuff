@@ -1,7 +1,8 @@
-local Debris = game:GetService("Debris")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+
+local Types = require(ReplicatedStorage.Shared.Types)
 local GridBuilder = require(ServerScriptService.Server.fixedmodules.Grid.GridBuilder)
-local Types = require(ServerScriptService.Server.fixedmodules.Types)
 
 local INVALID_MAP_MSG = "Unable to make Pathfinder: Map is missing attributes 'CellPartSize' or 'CellPartAnchor'."
 local INVALID_PATH_MSG = "Invalid path: Path length must be greater than 0"
@@ -58,8 +59,8 @@ function Pathfinder.new(grid: Grid, map: Model): Pathfinder
     return setmetatable(self, Pathfinder)
 end
 
-function Pathfinder.getWaypoints(self: Pathfinder, path: {number})
-    if #path < 1 then
+function Pathfinder.getWaypoints(self: Pathfinder, path: {number}): {CFrame}
+    if #path < 2 then
         error(INVALID_PATH_MSG)
     end
 
@@ -91,17 +92,20 @@ function Pathfinder.getWaypoints(self: Pathfinder, path: {number})
     waypoints[1] = groundCFrames[1]
     local lastCross = crossProducts[1]
 
+    -- cframe pruning
     for i = 2, #crossProducts do
         local currCross = crossProducts[i]
         local didDirChange = isCrossDiff(lastCross, currCross)
 
         if didDirChange or (not didDirChange and i == #crossProducts) then
             local currCenterIndex = i * 2 - 1
-            local nextCross = crossProducts[i + 1]
+            --local nextCross = crossProducts[i + 1]
 
-            if nextCross ~= nil and currCross ~= nextCross then
+            -- added this due to a minor issue i experienced with slopes (turns out im not using slopes)
+            -- dont remove just in case
+            --[[if nextCross ~= nil and currCross ~= nextCross then
                 table.insert(waypoints, groundCFrames[currCenterIndex - 2])
-            end
+            end--]]
 
             table.insert(waypoints, groundCFrames[currCenterIndex])
         end
@@ -109,13 +113,26 @@ function Pathfinder.getWaypoints(self: Pathfinder, path: {number})
         lastCross = currCross
     end
 
-    for _, waypoint in waypoints do
+    -- just fix orientation
+    for i = 1, #waypoints do
+        if i < #waypoints then
+            if i == 4 then
+            end
+            waypoints[i] = CFrame.lookAt(waypoints[i].Position, waypoints[i + 1].Position)
+        elseif i > 1 then
+            waypoints[i] = CFrame.lookAlong(waypoints[i].Position, (waypoints[i].Position - waypoints[i - 1].Position).Unit)
+        end
+    end
+
+    --[[for _, waypoint in waypoints do
         local marker = workspace.WaypointMarker:Clone() :: BasePart
         marker.CFrame = waypoint
         marker.Anchored = true
         marker.Parent = workspace
-        Debris:AddItem(marker, 5)
-    end
+        task.delay(2, marker.Destroy, marker)
+    end--]]
+
+    return waypoints
 end
 
 return Pathfinder

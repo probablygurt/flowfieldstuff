@@ -1,8 +1,9 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local Types = require(ReplicatedStorage.Shared.Types)
 local GridHeap = require(ServerScriptService.Server.fixedmodules.Grid.GridHeap)
 local ObjectProfiles = require(ServerScriptService.Server.fixedmodules.Objects.ObjectProfiles)
-local Types = require(ServerScriptService.Server.fixedmodules.Types)
 
 type Grid = Types.Grid
 type UnitProfile = Types.UnitProfile
