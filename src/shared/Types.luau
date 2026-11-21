@@ -88,20 +88,23 @@ export type UnitProfile = {
 
 export type UnitData = {
     name: string,
+    
     position: Vector2,
     health: number,
     maxHealth: number,
     speed: number,
-    model: Model,
+
     waypoints: {CFrame},
+    cframe: CFrame,
     targetIndex: number,
     waypointIndex: number,
-    cframeIndex: number,
-    onTickConnection: Connection,
+    unitIndex: number,
+
+    onTickConnection: Connection
 }
 
 export type Unit = UnitData & {
-    step: (self: Unit, ticks: number) -> (boolean),
+    step: (self: Unit) -> (boolean),
     destroy: (self: Unit) -> ()
 }
 

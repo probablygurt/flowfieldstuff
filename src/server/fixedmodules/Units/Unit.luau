@@ -4,8 +4,6 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local TaskManager = require(ReplicatedStorage.Shared.TaskManager)
 local Types = require(ReplicatedStorage.Shared.Types)
 local UnitManager = require(script.Parent.UnitManager)
-local GridBuilder = require(ServerScriptService.Server.fixedmodules.Grid.GridBuilder)
-local GridManager = require(ServerScriptService.Server.fixedmodules.Grid.GridManager)
 local DijkstraSolver = require(ServerScriptService.Server.fixedmodules.Pathfinding.DijkstraSolver)
 local UnitProfiles = require(script.Parent.UnitProfiles)
 
@@ -18,15 +16,18 @@ local Unit = {}
 local UnitClass = {}
 UnitClass.__index = UnitClass
 
+local remotes = ReplicatedStorage.Remotes :: Folder
+local renderUnit = remotes.RenderUnit :: RemoteEvent
+local renderFinished = remotes.RenderFinished :: RemoteEvent
+
 local unitModelsFolder = ReplicatedStorage.Units :: Folder
 local unitModels: {[string]: Model} = {}
-
-local unitsFolder = workspace:FindFirstChild("Units") :: Folder?
 local units: {Unit} = {}
-local parts = {}
-local cframes = {}
-local pivotOffsets = {}
-local finalCFrames = {}
+local finishedRenders = {}
+local finishedRenderCount = 0
+local finishedUnits = {}
+
+local totalUnits = 0
 
 local function preloadUnitModels()
     for name, profile in UnitProfiles do
@@ -56,6 +57,7 @@ function Unit.new(profileName, spawnPos: Vector2): Unit?
 
     local pathfinder = UnitManager.Pathfinders[profileName]
     assert(pathfinder, `Couldn't make unit object for {profileName} without an initialized pathfinder object`)    
+
     local grid = pathfinder.grid
     assert(grid:isValid(spawnPos.X, spawnPos.Y), `Couldn't make unit object for {profileName} with an invalid position`)
 
@@ -66,13 +68,6 @@ function Unit.new(profileName, spawnPos: Vector2): Unit?
     end
 
     local waypoints = pathfinder:getWaypoints(path)
-
-    local anchor = GridBuilder.getMapCellAnchor(GridManager.Map, GridManager.CellSize)
-    local worldCframe = GridBuilder.pointToWorldCf(anchor, GridManager.CellSize, spawnPos)
-
-    model = model:Clone()
-    model:PivotTo(waypoints[1])
-    model.Parent = unitsFolder
     
     local self = {} :: Unit
     self.name = profileName
@@ -80,37 +75,64 @@ function Unit.new(profileName, spawnPos: Vector2): Unit?
     self.health = profile.Health
     self.maxHealth = profile.Health
     self.speed = profile.Speed
-    self.model = model
     self.waypoints = waypoints
     self.targetIndex = -1
-    self.waypointIndex = 1
+    self.waypointIndex = 1   
+    self.cframe = waypoints[1]
 
-    local pivotInverse = model.PrimaryPart.PivotOffset:Inverse()
     table.insert(units, self)
-    table.insert(parts, model.PrimaryPart)
-    table.insert(cframes, waypoints[1])
-    table.insert(pivotOffsets, pivotInverse)
-    table.insert(finalCFrames, waypoints[1] * pivotInverse)
+    self.unitIndex = #units
 
-    self.cframeIndex = #finalCFrames
+    totalUnits += 1
+    self.targetIndex = totalUnits 
+
     self.onTickConnection = TaskManager.OnTick:Connect(function()
-        self:step(1)
+        self:step()
     end)
+
+    renderUnit:FireAllClients(profileName, self.targetIndex, self.waypoints, TaskManager.Tick)
 
     return setmetatable(self, UnitClass)
 end
 
-function UnitClass.step(self: Unit, ticks: number)
+local function checkMismatch(unitIndex: number)
+    local cntBefore = finishedUnits[unitIndex]
+    for _, list in finishedRenders do
+        if cntBefore ~= list[unitIndex] then return true end
+        cntBefore = list[unitIndex]
+    end
+
+    return false
+end
+
+renderFinished.OnServerEvent:Connect(function(a0: Player, unitIndex: number, tickFinished: number)
+	if finishedRenders[a0] == nil then finishedRenders[a0] = {} end
+	
+	finishedRenders[a0][unitIndex] = tickFinished
+	
+    local i = 0
+    local min = finishedRenderCount
+	for _, list in finishedRenders do
+        if i == 0 then
+            min = #list
+        end
+
+		finishedRenderCount = math.min(#list, min)
+	end
+end)
+
+function UnitClass.step(self: Unit)
     local waypoints = self.waypoints 
     local currWaypoint = waypoints[self.waypointIndex]
     local nextWaypoint = waypoints[self.waypointIndex + 1]
     
     if nextWaypoint == nil then
+        finishedUnits[self.targetIndex] = TaskManager.Tick
         self:destroy()
         return
     end 
 
-    local currCFrame = cframes[self.cframeIndex] --self.model:GetPivot()
+    local currCFrame = self.cframe
     local dir = nextWaypoint.Position - currWaypoint.Position
 
     currCFrame = CFrame.lookAlong(currCFrame.Position + dir.Unit * self.speed * UNIT_STEP, dir)
@@ -121,47 +143,45 @@ function UnitClass.step(self: Unit, ticks: number)
         self.waypointIndex += 1
     end
 
-    cframes[self.cframeIndex] = currCFrame
-    finalCFrames[self.cframeIndex] = currCFrame * pivotOffsets[self.cframeIndex]
+    self.cframe = currCFrame
 end
 
 function UnitClass.destroy(self: Unit)
-    local i = self.cframeIndex
-    local last = #finalCFrames
+    local i = table.find(units, self)
+    if i == nil then return end 
+
+    local last = #units
 
     if i ~= last then
-        parts[i], cframes[i] = parts[last], cframes[last]
-        pivotOffsets[i], finalCFrames[i] = pivotOffsets[last], finalCFrames[last]
         units[i] = units[last]
-
-        units[i].cframeIndex = i
     end
 
     self.onTickConnection:Disconnect()
-    self.model:Destroy()
-    parts[last], cframes[last], pivotOffsets[last], finalCFrames[last], units[last] = nil, nil, nil, nil, nil
+    units[last] = nil
     setmetatable(self, nil)
 end
 
 function Unit.init()
     preloadUnitModels()
+end
 
-    if unitsFolder == nil then
-        unitsFolder = Instance.new("Folder")
-        unitsFolder.Name = "Units"
-        unitsFolder.Parent = workspace
-    end
+function Unit.start()
+    local c
+    c = TaskManager.PostTicks:Connect(function()
+        if #finishedUnits < 100 then return end
+        print(#finishedUnits, finishedRenderCount)
+        if #finishedUnits < 2000 or finishedRenderCount < 2000 then return end 
 
-    --[[TaskManager.OnTick:Connect(function(currTick: number)
-        for _, unit in units do
-            if unit:step(1) then
-                unit:destroy()
-            end
+        local mismatches = 0
+
+        for i = 1, 200 do
+            if not checkMismatch(i) then continue end 
+            mismatches += 1
         end
-    end)--]]
 
-    TaskManager.PostTicks:Connect(function()
-        workspace:BulkMoveTo(parts, finalCFrames, Enum.BulkMoveMode.FireCFrameChanged)
+        warn(`MISMATCHES: {mismatches}`)
+
+        c:Disconnect()
     end)
 end
 

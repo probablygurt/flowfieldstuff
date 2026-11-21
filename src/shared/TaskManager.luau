@@ -4,7 +4,7 @@ local RunService = game:GetService("RunService")
 local Signal = require(script.Parent.Signal)
 local Types = require(script.Parent.Types)
 
-local TICKS_PER_SECOND = 4
+local TICKS_PER_SECOND = 30
 
 type TaskLink = Types.TaskLink
 type TaskList = Types.TaskList
@@ -62,13 +62,13 @@ local TaskManager = {} :: TaskManager
 
 local tasks: {TaskList} = {}
 local heartbeatConnection = nil 
+local isServer = RunService:IsServer()
 
 local function heartbeat(deltaTime: number)
     local startTime = TaskManager.StartTime
     if startTime == nil then return end 
 
-    local currentTime = workspace:GetServerTimeNow()
-    local currentTick = math.floor((currentTime - startTime) * TICKS_PER_SECOND)
+    local currentTick = math.floor((workspace:GetServerTimeNow() - startTime) * TICKS_PER_SECOND)
 
     while TaskManager.Tick < currentTick do
         TaskManager.Tick += 1
@@ -103,12 +103,19 @@ function TaskManager.init()
 end
 
 function TaskManager.start()
-    local startTime = workspace:GetServerTimeNow()
-    startHeartbeat(startTime)
+    local startTime 
+    if isServer then
+        startTime = workspace:GetServerTimeNow()
+        
+        requestServerStartTime.OnServerInvoke = function(player)
+            return startTime, TICKS_PER_SECOND
+        end
+    else
+        startTime = requestServerStartTime:InvokeServer()
+        TaskManager.Tick = math.floor((workspace:GetServerTimeNow() - startTime) * TICKS_PER_SECOND)
+    end    
 
-    requestServerStartTime.OnServerInvoke = function(player)
-        return startTime, TICKS_PER_SECOND
-    end
+    startHeartbeat(startTime)
 end
 
 function TaskManager:delay(amount: number, fn: () -> () | thread, ...)
