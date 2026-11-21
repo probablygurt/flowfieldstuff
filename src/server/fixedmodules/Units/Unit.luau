@@ -12,7 +12,7 @@ local UnitProfiles = require(script.Parent.UnitProfiles)
 type Unit = Types.Unit
 type Pathfinder = Types.Pathfinder
 
-local UNIT_STEP = 0.1
+local UNIT_STEP = 0.05
 
 local Unit = {}
 local UnitClass = {}
@@ -21,6 +21,7 @@ UnitClass.__index = UnitClass
 local remotes = ReplicatedStorage.Remotes :: Folder
 local renderUnit = remotes.RenderUnit :: RemoteEvent
 local renderFinished = remotes.RenderFinished :: RemoteEvent
+local updateWaypoints = remotes.UpdateWaypoints :: RemoteEvent
 
 local unitModelsFolder = ReplicatedStorage.Units :: Folder
 local unitModels: {[string]: Model} = {}
@@ -101,12 +102,19 @@ function Unit.new(profileName, spawnPos: Vector2): Unit?
         if name ~= profileName then return end 
 
         local path = DijkstraSolver.tracePath(grid, self.position)
-        self.waypoints = pathfinder:getWaypoints(path)
+        self.waypoints = {self.cframe}
+
+        for _, wp in pathfinder:getWaypoints(path) do
+            table.insert(self.waypoints, wp)
+        end
 
         self.waypointIndex = 1
+        self.cframe = self.waypoints[1]
+
+        updateWaypoints:FireAllClients(self.targetIndex, self.waypoints, TaskManager.Tick)
     end)
 
-    renderUnit:FireAllClients(profileName, self.targetIndex, self.waypoints, TaskManager.Tick)
+    renderUnit:FireAllClients(profileName, self.targetIndex, self.waypoints, TaskManager.Tick, self.speed)
 
     return setmetatable(self, UnitClass)
 end
@@ -124,7 +132,6 @@ function UnitClass.step(self: Unit)
 
     local currCFrame = self.cframe
     local dir = nextWaypoint.Position - currWaypoint.Position
-
     currCFrame = CFrame.lookAlong(currCFrame.Position + dir.Unit * self.speed * UNIT_STEP, dir)
 
     local passed = (currCFrame.Position - nextWaypoint.Position):Dot(dir) >= 0
@@ -156,50 +163,8 @@ function Unit.init()
     preloadUnitModels()
 end
 
-local function checkMismatch(unitIndex: number)
-    local cntBefore = finishedUnits[unitIndex]
-    for _, list in finishedRenders do
-        if cntBefore ~= list[unitIndex] then return true end
-        cntBefore = list[unitIndex]
-    end
-
-    return false
-end
-
-renderFinished.OnServerEvent:Connect(function(a0: Player, unitIndex: number, tickFinished: number)
-	if finishedRenders[a0] == nil then finishedRenders[a0] = {} end
-	
-	finishedRenders[a0][unitIndex] = tickFinished
-	
-    local i = 0
-    local min = finishedRenderCount
-	for _, list in finishedRenders do
-        if i == 0 then
-            min = #list
-        end
-
-		finishedRenderCount = math.min(#list, min)
-	end
-end)
-
 function Unit.start()
-    local c
-    c = TaskManager.PostTicks:Connect(function()
-        if #finishedUnits < 0 then return end
-        print(#finishedUnits, finishedRenderCount)
-        if #finishedUnits < 1 or finishedRenderCount < 1 then return end 
 
-        local mismatches = 0
-
-        for i = 1, 200 do
-            if not checkMismatch(i) then continue end 
-            mismatches += 1
-        end
-
-        warn(`MISMATCHES: {mismatches}`)
-
-        c:Disconnect()
-    end)
 end
 
 return Unit
